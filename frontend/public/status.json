@@ -1,0 +1,1277 @@
+{
+  "generated_at": "2026-04-30T16:42:56Z",
+  "overall_status": "operational",
+  "services": [
+    {
+      "id": 9,
+      "name": "Home",
+      "url": "https://anpoliros.com",
+      "timestamp": "2026-04-30T16:42:56Z",
+      "latency_ms": 1446,
+      "status": "up"
+    },
+    {
+      "id": 10,
+      "name": "Gitea",
+      "url": "https://git.anpoliros.com",
+      "timestamp": "2026-04-30T16:42:56Z",
+      "latency_ms": 1450,
+      "status": "up"
+    },
+    {
+      "id": 225,
+      "name": "vSSS",
+      "url": "https://vsss.anpoliros.com",
+      "timestamp": "2026-04-30T16:42:56Z",
+      "latency_ms": 1402,
+      "status": "up"
+    }
+  ],
+  "servers": [
+    {
+      "id": 271,
+      "name": "HP",
+      "ip": "10.177.87.87:9100",
+      "timestamp": "2026-04-30T16:42:54Z",
+      "cpu_usage": 0.9804573674844882,
+      "memory_usage": 25.37288848132915,
+      "disk_usage": 41.25519299653836,
+      "network_in": 23082254.221770093,
+      "network_out": 12254812.980671415
+    },
+    {
+      "id": 10,
+      "name": "X253",
+      "ip": "100.124.245.128:9100",
+      "timestamp": "2026-04-30T16:42:54Z",
+      "cpu_usage": 2.6162195310588636,
+      "memory_usage": 30.32379237837666,
+      "disk_usage": 34.298748315611704,
+      "network_in": 54535.17802644965,
+      "network_out": 168958.04679552393
+    },
+    {
+      "id": 9,
+      "name": "X250",
+      "ip": "100.124.171.68:9100",
+      "timestamp": "2026-04-30T16:42:54Z",
+      "cpu_usage": 0.2797807355312959,
+      "memory_usage": 29.553510064880328,
+      "disk_usage": 44.12836651883373,
+      "network_in": 39075.56459816887,
+      "network_out": 156912.93997965413
+    }
+  ],
+  "history": {
+    "services": [
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T15:48:38Z",
+        "latency_ms": 1905,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T15:48:45Z",
+        "latency_ms": 8364,
+        "status": "up"
+      },
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T15:58:46Z",
+        "latency_ms": 1556,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T15:58:47Z",
+        "latency_ms": 1879,
+        "status": "up"
+      },
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T16:08:46Z",
+        "latency_ms": 1568,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T16:08:47Z",
+        "latency_ms": 1891,
+        "status": "up"
+      },
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T16:15:06Z",
+        "latency_ms": 1453,
+        "status": "up"
+      },
+      {
+        "name": "vSSS",
+        "url": "https://vsss.anpoliros.com",
+        "timestamp": "2026-04-30T16:15:06Z",
+        "latency_ms": 1422,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T16:15:07Z",
+        "latency_ms": 2691,
+        "status": "up"
+      },
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T16:25:10Z",
+        "latency_ms": 3321,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T16:25:11Z",
+        "latency_ms": 4031,
+        "status": "up"
+      },
+      {
+        "name": "vSSS",
+        "url": "https://vsss.anpoliros.com",
+        "timestamp": "2026-04-30T16:25:11Z",
+        "latency_ms": 3345,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T16:26:33Z",
+        "latency_ms": 1785,
+        "status": "up"
+      },
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T16:26:33Z",
+        "latency_ms": 1493,
+        "status": "up"
+      },
+      {
+        "name": "vSSS",
+        "url": "https://vsss.anpoliros.com",
+        "timestamp": "2026-04-30T16:26:33Z",
+        "latency_ms": 1426,
+        "status": "up"
+      },
+      {
+        "name": "Home",
+        "url": "https://anpoliros.com",
+        "timestamp": "2026-04-30T16:42:56Z",
+        "latency_ms": 1446,
+        "status": "up"
+      },
+      {
+        "name": "Gitea",
+        "url": "https://git.anpoliros.com",
+        "timestamp": "2026-04-30T16:42:56Z",
+        "latency_ms": 1450,
+        "status": "up"
+      },
+      {
+        "name": "vSSS",
+        "url": "https://vsss.anpoliros.com",
+        "timestamp": "2026-04-30T16:42:56Z",
+        "latency_ms": 1402,
+        "status": "up"
+      }
+    ],
+    "servers": [
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:48:23Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:48:36Z",
+        "cpu_usage": 0.2797696255725346,
+        "memory_usage": 29.499587203748444,
+        "disk_usage": 44.12885733878033,
+        "network_in": 12862152764.0,
+        "network_out": 7659333624.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:49:45Z",
+        "cpu_usage": 0.2797699002957593,
+        "memory_usage": 29.49429217329662,
+        "disk_usage": 44.12885733878033,
+        "network_in": 12862212342.0,
+        "network_out": 7659513992.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:49:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:50:45Z",
+        "cpu_usage": 0.2797701459270524,
+        "memory_usage": 29.493103492991114,
+        "disk_usage": 44.12885733878033,
+        "network_in": 12862247031.0,
+        "network_out": 7659651937.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:50:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:51:45Z",
+        "cpu_usage": 0.2797702953580977,
+        "memory_usage": 29.492995431145154,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862283995.0,
+        "network_out": 7659783932.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:51:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:52:45Z",
+        "cpu_usage": 0.2797705126540234,
+        "memory_usage": 29.492022874531553,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862320230.0,
+        "network_out": 7659918823.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:52:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:53:45Z",
+        "cpu_usage": 0.27977064529320084,
+        "memory_usage": 29.490942256071996,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862380285.0,
+        "network_out": 7660045988.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:53:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:54:45Z",
+        "cpu_usage": 0.2797706337853173,
+        "memory_usage": 29.490293884996266,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862414772.0,
+        "network_out": 7660177287.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:54:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:55:45Z",
+        "cpu_usage": 0.27977075657083794,
+        "memory_usage": 29.48921326653671,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862459212.0,
+        "network_out": 7660325870.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:55:45Z",
+        "cpu_usage": null,
+        "memory_usage": null,
+        "disk_usage": null,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:56:45Z",
+        "cpu_usage": 0.2797708775674812,
+        "memory_usage": 29.488132648077148,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862491454.0,
+        "network_out": 7660454727.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:56:45Z",
+        "cpu_usage": 2.616264861435727,
+        "memory_usage": 31.306764649495754,
+        "disk_usage": 34.59443979200692,
+        "network_in": 12203961677.0,
+        "network_out": 8690318876.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:57:45Z",
+        "cpu_usage": 0.27977101406695404,
+        "memory_usage": 29.487268153309497,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862526906.0,
+        "network_out": 7660588956.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:57:45Z",
+        "cpu_usage": 2.616261708465342,
+        "memory_usage": 31.312915915272466,
+        "disk_usage": 34.594478978066746,
+        "network_in": 12204012154.0,
+        "network_out": 8690467622.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:58:48Z",
+        "cpu_usage": 0.2797710980411122,
+        "memory_usage": 29.48661978223377,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862559972.0,
+        "network_out": 7660718661.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:58:48Z",
+        "cpu_usage": 2.6162601133191963,
+        "memory_usage": 31.356487381190867,
+        "disk_usage": 34.59451489862159,
+        "network_in": 12204406306.0,
+        "network_out": 8690834778.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T15:59:48Z",
+        "cpu_usage": 0.2797713711209404,
+        "memory_usage": 29.484890792698483,
+        "disk_usage": 44.128862398779766,
+        "network_in": 12862596839.0,
+        "network_out": 7660855158.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T15:59:48Z",
+        "cpu_usage": 2.616257085346976,
+        "memory_usage": 31.37371092536567,
+        "disk_usage": 34.59455081917642,
+        "network_in": 12204464855.0,
+        "network_out": 8690991249.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:00:48Z",
+        "cpu_usage": 0.27977222653002565,
+        "memory_usage": 29.34397814557227,
+        "disk_usage": 44.12833109883758,
+        "network_in": 12862644012.0,
+        "network_out": 7661007173.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:00:48Z",
+        "cpu_usage": 2.6162706375508216,
+        "memory_usage": 30.485468147207996,
+        "disk_usage": 34.280239433356506,
+        "network_in": 12205119895.0,
+        "network_out": 8691339330.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:01:48Z",
+        "cpu_usage": 2.6163238704458998,
+        "memory_usage": 30.305543623239075,
+        "disk_usage": 34.281349705051426,
+        "network_in": 12205770667.0,
+        "network_out": 8691523669.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:01:49Z",
+        "cpu_usage": 0.27977244712929783,
+        "memory_usage": 29.349597361561976,
+        "disk_usage": 44.12833109883758,
+        "network_in": 12862674118.0,
+        "network_out": 7661134163.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:02:48Z",
+        "cpu_usage": 0.2797724478076524,
+        "memory_usage": 29.348732866794325,
+        "disk_usage": 44.12833109883758,
+        "network_in": 12862706878.0,
+        "network_out": 7661380494.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:02:48Z",
+        "cpu_usage": 2.6163219292135054,
+        "memory_usage": 30.20907127164092,
+        "disk_usage": 34.28139215661623,
+        "network_in": 12205819577.0,
+        "network_out": 8691665476.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:03:48Z",
+        "cpu_usage": 0.279772579433088,
+        "memory_usage": 29.347652248334764,
+        "disk_usage": 44.12833109883758,
+        "network_in": 12862736519.0,
+        "network_out": 7661506430.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:03:48Z",
+        "cpu_usage": 2.6163188848966734,
+        "memory_usage": 30.20814858177442,
+        "disk_usage": 34.281424811666085,
+        "network_in": 12205867672.0,
+        "network_out": 8691810809.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:04:48Z",
+        "cpu_usage": 0.27977259429730894,
+        "memory_usage": 29.359214865852024,
+        "disk_usage": 44.12833109883758,
+        "network_in": 12862764912.0,
+        "network_out": 7661630351.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:04:48Z",
+        "cpu_usage": 2.616316911196945,
+        "memory_usage": 30.17575191535038,
+        "disk_usage": 34.29974429463215,
+        "network_in": 12205963132.0,
+        "network_out": 8692004778.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:05:48Z",
+        "cpu_usage": 0.2797728125139537,
+        "memory_usage": 29.358134247392464,
+        "disk_usage": 44.12833109883758,
+        "network_in": 12862800193.0,
+        "network_out": 7661772787.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:05:48Z",
+        "cpu_usage": 2.616314523073296,
+        "memory_usage": 30.172061155884357,
+        "disk_usage": 34.29977694968199,
+        "network_in": 12206022457.0,
+        "network_out": 8692173673.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:06:48Z",
+        "cpu_usage": 0.2797728534854299,
+        "memory_usage": 29.357161690778867,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12862834261.0,
+        "network_out": 7661901239.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:06:48Z",
+        "cpu_usage": 2.6163206293704224,
+        "memory_usage": 29.934519775806866,
+        "disk_usage": 34.30657246555586,
+        "network_in": 12206103684.0,
+        "network_out": 8692363752.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:07:48Z",
+        "cpu_usage": 0.2797729487055034,
+        "memory_usage": 29.36353733969025,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12862863400.0,
+        "network_out": 7662027601.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:07:48Z",
+        "cpu_usage": 2.616320605484898,
+        "memory_usage": 29.73409103258223,
+        "disk_usage": 34.30666716520043,
+        "network_in": 12206180545.0,
+        "network_out": 8692552008.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:08:48Z",
+        "cpu_usage": 2.616317264611709,
+        "memory_usage": 29.627776655741332,
+        "disk_usage": 34.30669982025027,
+        "network_in": 12206225997.0,
+        "network_out": 8692693360.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:08:49Z",
+        "cpu_usage": 0.2797731244373658,
+        "memory_usage": 29.36202447384687,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12862889833.0,
+        "network_out": 7662152442.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:09:48Z",
+        "cpu_usage": 0.2797732332266073,
+        "memory_usage": 29.360727731695402,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12862920649.0,
+        "network_out": 7662380531.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:09:48Z",
+        "cpu_usage": 2.6163145208403735,
+        "memory_usage": 29.729477583249697,
+        "disk_usage": 34.307957039669525,
+        "network_in": 12206273159.0,
+        "network_out": 8692839073.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:10:48Z",
+        "cpu_usage": 0.27977338364712223,
+        "memory_usage": 29.359430989543934,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12862957843.0,
+        "network_out": 7662520961.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:10:48Z",
+        "cpu_usage": 2.616311211477945,
+        "memory_usage": 29.69267250968568,
+        "disk_usage": 34.307992960224354,
+        "network_in": 12206343647.0,
+        "network_out": 8693000862.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:11:48Z",
+        "cpu_usage": 2.616308079178817,
+        "memory_usage": 29.698311169981007,
+        "disk_usage": 34.308025615274204,
+        "network_in": 12206393552.0,
+        "network_out": 8693145756.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:11:49Z",
+        "cpu_usage": 0.27977347760657356,
+        "memory_usage": 29.358566494776294,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12862990117.0,
+        "network_out": 7662654864.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:12:48Z",
+        "cpu_usage": 2.6163053385214683,
+        "memory_usage": 29.701591845061913,
+        "disk_usage": 34.30806153582904,
+        "network_in": 12206451985.0,
+        "network_out": 8693298092.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:12:49Z",
+        "cpu_usage": 0.27977351790484384,
+        "memory_usage": 29.364726019995768,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12863020343.0,
+        "network_out": 7662782913.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:13:48Z",
+        "cpu_usage": 2.6163019698504457,
+        "memory_usage": 29.720250684584627,
+        "disk_usage": 34.308100721888856,
+        "network_in": 12206500618.0,
+        "network_out": 8693441706.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:13:49Z",
+        "cpu_usage": 0.2797736665819145,
+        "memory_usage": 29.37088554521524,
+        "disk_usage": 44.12833615883702,
+        "network_in": 12863053719.0,
+        "network_out": 7662914872.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:14:49Z",
+        "cpu_usage": 0.2797736664134687,
+        "memory_usage": 29.368724308296123,
+        "disk_usage": 44.128341218836475,
+        "network_in": 12863084382.0,
+        "network_out": 7663045307.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:14:49Z",
+        "cpu_usage": 2.6162983656458443,
+        "memory_usage": 29.594354778354514,
+        "disk_usage": 34.30813337693871,
+        "network_in": 12206543353.0,
+        "network_out": 8693585271.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:15:04Z",
+        "cpu_usage": 0.2797739038719632,
+        "memory_usage": 29.367103380606785,
+        "disk_usage": 44.128341218836475,
+        "network_in": 12863102469.0,
+        "network_out": 7663154428.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:15:04Z",
+        "cpu_usage": 2.6162979632059686,
+        "memory_usage": 29.60532453565633,
+        "disk_usage": 34.30814970446363,
+        "network_in": 12206580270.0,
+        "network_out": 8693712732.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:15:04Z",
+        "cpu_usage": 0.9803626602908043,
+        "memory_usage": 23.787199728584884,
+        "disk_usage": 41.142651887969194,
+        "network_in": 10316186757.0,
+        "network_out": 9924818454.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:16:07Z",
+        "cpu_usage": 0.2797741726055708,
+        "memory_usage": 29.37261453475053,
+        "disk_usage": 44.128341218836475,
+        "network_in": 12863145892.0,
+        "network_out": 7663303624.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:16:07Z",
+        "cpu_usage": 2.6162937376585287,
+        "memory_usage": 29.648280874997056,
+        "disk_usage": 34.30818889052346,
+        "network_in": 12206636658.0,
+        "network_out": 8693862418.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:16:07Z",
+        "cpu_usage": 0.9803636878900501,
+        "memory_usage": 23.4712740038893,
+        "disk_usage": 41.14328735442074,
+        "network_in": 10317602013.0,
+        "network_out": 9926676762.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:17:07Z",
+        "cpu_usage": 0.2797743495269067,
+        "memory_usage": 29.228135846707794,
+        "disk_usage": 44.128341218836475,
+        "network_in": 12863182103.0,
+        "network_out": 7663438105.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:17:07Z",
+        "cpu_usage": 2.616290484800901,
+        "memory_usage": 29.762899460636515,
+        "disk_usage": 34.308218280068324,
+        "network_in": 12206682985.0,
+        "network_out": 8694005096.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:17:07Z",
+        "cpu_usage": 0.9803545275315807,
+        "memory_usage": 23.517566999461593,
+        "disk_usage": 41.143683298902104,
+        "network_in": 10317944736.0,
+        "network_out": 9926845762.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:18:07Z",
+        "cpu_usage": 2.6162874670511567,
+        "memory_usage": 29.765154924754643,
+        "disk_usage": 34.30825746612815,
+        "network_in": 12206731958.0,
+        "network_out": 8694148727.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:18:07Z",
+        "cpu_usage": 0.9803452038475166,
+        "memory_usage": 23.530916493139642,
+        "disk_usage": 41.14373489660542,
+        "network_in": 10318276225.0,
+        "network_out": 9927004478.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:18:08Z",
+        "cpu_usage": 0.27977451199141523,
+        "memory_usage": 29.254502937120975,
+        "disk_usage": 44.128341218836475,
+        "network_in": 12863213557.0,
+        "network_out": 7663570702.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:19:07Z",
+        "cpu_usage": 2.6162845990636536,
+        "memory_usage": 29.791092762113124,
+        "disk_usage": 34.308293386682976,
+        "network_in": 12206782389.0,
+        "network_out": 8694294149.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:19:07Z",
+        "cpu_usage": 0.9803401355343792,
+        "memory_usage": 23.587805495664483,
+        "disk_usage": 41.14334003839152,
+        "network_in": 10318658647.0,
+        "network_out": 9927261670.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:19:08Z",
+        "cpu_usage": 0.2797745806544377,
+        "memory_usage": 29.26617361648418,
+        "disk_usage": 44.128341218836475,
+        "network_in": 12863243155.0,
+        "network_out": 7663699613.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:20:07Z",
+        "cpu_usage": 2.616281830426276,
+        "memory_usage": 30.017049258311125,
+        "disk_usage": 34.308326041732826,
+        "network_in": 12206829499.0,
+        "network_out": 8694443116.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:20:07Z",
+        "cpu_usage": 0.9803337417778152,
+        "memory_usage": 23.571800854072578,
+        "disk_usage": 41.14255846896948,
+        "network_in": 10319340327.0,
+        "network_out": 9927727835.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:20:08Z",
+        "cpu_usage": 0.27977572876369816,
+        "memory_usage": 29.427618014341974,
+        "disk_usage": 44.12836145883428,
+        "network_in": 12863658423.0,
+        "network_out": 7664048285.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:21:07Z",
+        "cpu_usage": 2.61627831008949,
+        "memory_usage": 30.020124891199483,
+        "disk_usage": 34.30836196228766,
+        "network_in": 12206903874.0,
+        "network_out": 8694611026.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:21:07Z",
+        "cpu_usage": 0.9803296449781618,
+        "memory_usage": 23.57590649945791,
+        "disk_usage": 41.14263668022505,
+        "network_in": 10321122690.0,
+        "network_out": 9928924983.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:21:08Z",
+        "cpu_usage": 0.27977647968330244,
+        "memory_usage": 29.44782557953568,
+        "disk_usage": 44.12836145883428,
+        "network_in": 12863987494.0,
+        "network_out": 7664382359.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:22:07Z",
+        "cpu_usage": 2.616274856748932,
+        "memory_usage": 30.126131704751547,
+        "disk_usage": 34.30840767935746,
+        "network_in": 12206945348.0,
+        "network_out": 8694746643.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:22:07Z",
+        "cpu_usage": 0.9803280767050702,
+        "memory_usage": 23.459694608820502,
+        "disk_usage": 41.14269316613186,
+        "network_in": 10321956734.0,
+        "network_out": 9929482750.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:22:08Z",
+        "cpu_usage": 0.27977690283711165,
+        "memory_usage": 29.50693540927344,
+        "disk_usage": 44.12836145883428,
+        "network_in": 12864084292.0,
+        "network_out": 7664533790.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:23:07Z",
+        "cpu_usage": 0.9803238445767066,
+        "memory_usage": 23.544290571520587,
+        "disk_usage": 41.142656233038956,
+        "network_in": 10322716496.0,
+        "network_out": 9929991659.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:23:08Z",
+        "cpu_usage": 0.27977705190076474,
+        "memory_usage": 29.519902830788112,
+        "disk_usage": 44.12836145883428,
+        "network_in": 12864117241.0,
+        "network_out": 7664667433.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:23:08Z",
+        "cpu_usage": 2.6162719976054682,
+        "memory_usage": 30.132693054913375,
+        "disk_usage": 34.30843706890232,
+        "network_in": 12206994632.0,
+        "network_out": 8694891188.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:24:08Z",
+        "cpu_usage": 0.27977721328543426,
+        "memory_usage": 29.526062356007586,
+        "disk_usage": 44.12836145883428,
+        "network_in": 12864150557.0,
+        "network_out": 7664795697.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:24:08Z",
+        "cpu_usage": 2.61626889396219,
+        "memory_usage": 30.058570302303956,
+        "disk_usage": 34.30847625496214,
+        "network_in": 12207041843.0,
+        "network_out": 8695031182.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:24:08Z",
+        "cpu_usage": 0.9803229281705057,
+        "memory_usage": 23.578205169179633,
+        "disk_usage": 41.14280613794548,
+        "network_in": 10323991665.0,
+        "network_out": 9930925548.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:25:12Z",
+        "cpu_usage": 0.27977744335153654,
+        "memory_usage": 29.52573817046973,
+        "disk_usage": 44.12836145883428,
+        "network_in": 12864183092.0,
+        "network_out": 7664929258.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:25:12Z",
+        "cpu_usage": 2.616265368820489,
+        "memory_usage": 30.07753670511549,
+        "disk_usage": 34.30851544102196,
+        "network_in": 12207094877.0,
+        "network_out": 8695178143.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:25:12Z",
+        "cpu_usage": 0.9803329012748766,
+        "memory_usage": 23.639900481122634,
+        "disk_usage": 41.143784864907595,
+        "network_in": 10326260572.0,
+        "network_out": 9932855154.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:26:12Z",
+        "cpu_usage": 0.27977768752498466,
+        "memory_usage": 29.52379305724252,
+        "disk_usage": 44.12836651883373,
+        "network_in": 12864227031.0,
+        "network_out": 7665077237.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:26:12Z",
+        "cpu_usage": 2.6162619500657707,
+        "memory_usage": 30.091069489824275,
+        "disk_usage": 34.308561158091756,
+        "network_in": 12207144577.0,
+        "network_out": 8695329607.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:26:12Z",
+        "cpu_usage": 0.9803509064121751,
+        "memory_usage": 23.650840673915873,
+        "disk_usage": 41.143802788320336,
+        "network_in": 10328930156.0,
+        "network_out": 9934909538.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:26:31Z",
+        "cpu_usage": 0.2797778402593626,
+        "memory_usage": 29.52379305724252,
+        "disk_usage": 44.12836651883373,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:26:31Z",
+        "cpu_usage": 2.6162611077944598,
+        "memory_usage": 30.098143445467496,
+        "disk_usage": 34.30858401662664,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:26:31Z",
+        "cpu_usage": 0.980351550601849,
+        "memory_usage": 23.636372576255603,
+        "disk_usage": 41.14450017201589,
+        "network_in": null,
+        "network_out": null
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:27:12Z",
+        "cpu_usage": 2.6162591172680996,
+        "memory_usage": 30.11505942635346,
+        "disk_usage": 34.298163790219384,
+        "network_in": 12207227647.0,
+        "network_out": 8695593669.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:27:12Z",
+        "cpu_usage": 0.9803825538195555,
+        "memory_usage": 25.074528526860018,
+        "disk_usage": 41.224875815462326,
+        "network_in": 10620000179.0,
+        "network_out": 10082551869.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:27:13Z",
+        "cpu_usage": 0.2797778919222227,
+        "memory_usage": 29.529304211386265,
+        "disk_usage": 44.12836651883373,
+        "network_in": 12864273986.0,
+        "network_out": 7665308337.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:28:12Z",
+        "cpu_usage": 2.6162561747577002,
+        "memory_usage": 30.20507294888606,
+        "disk_usage": 34.298202976279214,
+        "network_in": 12207287424.0,
+        "network_out": 8695746309.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:28:12Z",
+        "cpu_usage": 0.9804147737700639,
+        "memory_usage": 23.893774415683076,
+        "disk_usage": 41.25078709580763,
+        "network_in": 10679309638.0,
+        "network_out": 10113771005.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:28:13Z",
+        "cpu_usage": 0.27977812268102087,
+        "memory_usage": 29.527899407388837,
+        "disk_usage": 44.12836651883373,
+        "network_in": 12864309392.0,
+        "network_out": 7665445019.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:29:12Z",
+        "cpu_usage": 0.980451974688447,
+        "memory_usage": 26.17447271958442,
+        "disk_usage": 41.25270490097037,
+        "network_in": 10686685525.0,
+        "network_out": 10119094671.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:29:13Z",
+        "cpu_usage": 0.2797783821625516,
+        "memory_usage": 29.526926850775236,
+        "disk_usage": 44.12836651883373,
+        "network_in": 12864358135.0,
+        "network_out": 7665683260.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:29:13Z",
+        "cpu_usage": 2.616254136266674,
+        "memory_usage": 30.21512001632136,
+        "disk_usage": 34.29823889683404,
+        "network_in": 12207353825.0,
+        "network_out": 8695998965.0
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:30:12Z",
+        "cpu_usage": 0.9804902593604824,
+        "memory_usage": 25.87237589027356,
+        "disk_usage": 41.25371295715334,
+        "network_in": 10690034575.0,
+        "network_out": 10122295816.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:30:13Z",
+        "cpu_usage": 0.2797787371550231,
+        "memory_usage": 29.532005757535153,
+        "disk_usage": 44.12836651883373,
+        "network_in": 12864402583.0,
+        "network_out": 7665922643.0
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:30:13Z",
+        "cpu_usage": 2.616251741298689,
+        "memory_usage": 30.21952842346134,
+        "disk_usage": 34.29827481738887,
+        "network_in": 12207415710.0,
+        "network_out": 8696248660.0
+      },
+      {
+        "name": "X250",
+        "ip": "100.124.171.68:9100",
+        "timestamp": "2026-04-30T16:42:54Z",
+        "cpu_usage": 0.2797807355312959,
+        "memory_usage": 29.553510064880328,
+        "disk_usage": 44.12836651883373,
+        "network_in": 39075.56459816887,
+        "network_out": 156912.93997965413
+      },
+      {
+        "name": "X253",
+        "ip": "100.124.245.128:9100",
+        "timestamp": "2026-04-30T16:42:54Z",
+        "cpu_usage": 2.6162195310588636,
+        "memory_usage": 30.32379237837666,
+        "disk_usage": 34.298748315611704,
+        "network_in": 54535.17802644965,
+        "network_out": 168958.04679552393
+      },
+      {
+        "name": "HP",
+        "ip": "10.177.87.87:9100",
+        "timestamp": "2026-04-30T16:42:54Z",
+        "cpu_usage": 0.9804573674844882,
+        "memory_usage": 25.37288848132915,
+        "disk_usage": 41.25519299653836,
+        "network_in": 23082254.221770093,
+        "network_out": 12254812.980671415
+      }
+    ]
+  }
+}

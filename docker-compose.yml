@@ -1,0 +1,17 @@
+services:
+  status:
+    build: .
+    container_name: status-monitor
+    restart: unless-stopped
+    ports:
+      - "${STATUS_PORT:-18080}:8080"
+    environment:
+      CONFIG_PATH: /app/config.json
+      STATUS_DATABASE: /data/status.db
+      STATUS_JSON: /app/dist/status.json
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - status-data:/data
+
+volumes:
+  status-data:

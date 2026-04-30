@@ -1,0 +1,21 @@
+{
+  "database": "data/status.db",
+  "status_json": "frontend/public/status.json",
+  "service_interval_seconds": 600,
+  "server_interval_seconds": 60,
+  "failure_threshold": 3,
+  "request_timeout_seconds": 8,
+  "history_hours": 24,
+  "services": [
+    {
+      "name": "Example Site",
+      "url": "https://example.com"
+    }
+  ],
+  "servers": [
+    {
+      "name": "App Server",
+      "target": "100.64.0.10:9100"
+    }
+  ]
+}
