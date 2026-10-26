@@ -12,4 +12,5 @@ config.json
 
 backend/status_monitor/__pycache__/
 
+node_exporter*
 node_exporter*/
