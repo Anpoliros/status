@@ -36,7 +36,7 @@ def build_status(conn: sqlite3.Connection, config: AppConfig) -> dict[str, Any]:
             dict(row)
             for row in conn.execute(
                 """
-                SELECT s.id, s.name, s.ip,
+                SELECT s.id, s.name, s.ip, s.cluster,
                        m.timestamp, m.cpu_usage, m.memory_usage, m.disk_usage,
                        m.network_in, m.network_out
                 FROM servers s
@@ -53,10 +53,18 @@ def build_status(conn: sqlite3.Connection, config: AppConfig) -> dict[str, Any]:
         "ip",
     )
 
+    monitored = services + servers
     if services and any(service["status"] == "down" for service in services):
-        overall = "degraded"
-    elif services and all(service["status"] == "up" for service in services):
-        overall = "operational"
+        overall = "critical"
+    elif any(server_level(server) == "critical" for server in servers):
+        overall = "critical"
+    elif any(server_level(server) == "warning" for server in servers):
+        overall = "warning"
+    elif monitored and all(
+        service.get("status") == "up" if "status" in service else server_level(service) == "healthy"
+        for service in monitored
+    ):
+        overall = "healthy"
     else:
         overall = "unknown"
 
@@ -64,7 +72,7 @@ def build_status(conn: sqlite3.Connection, config: AppConfig) -> dict[str, Any]:
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "overall_status": overall,
         "services": services,
-        "servers": servers,
+        "servers": [with_server_level(server) for server in servers],
         "history": {
             "services": service_history(conn, config.history_hours),
             "servers": server_history(conn, config.history_hours),
@@ -91,7 +99,7 @@ def server_history(conn: sqlite3.Connection, hours: int = 24) -> list[dict[str, 
     since = _since(hours)
     rows = conn.execute(
         """
-        SELECT s.name, s.ip, m.timestamp, m.cpu_usage, m.memory_usage, m.disk_usage,
+        SELECT s.name, s.ip, s.cluster, m.timestamp, m.cpu_usage, m.memory_usage, m.disk_usage,
                m.network_in, m.network_out
         FROM server_metrics m
         JOIN servers s ON s.id = m.server_id
@@ -124,3 +132,18 @@ def _since(hours: int) -> str:
         .astimezone(UTC)
         - timedelta(hours=hours)
     ).isoformat().replace("+00:00", "Z")
+
+
+def server_level(server: dict[str, Any]) -> str:
+    values = [server.get("cpu_usage"), server.get("memory_usage"), server.get("disk_usage")]
+    if not any(value is not None for value in values):
+        return "critical"
+    if any(value is not None and value >= 95 for value in values):
+        return "critical"
+    if any(value is not None and value >= 80 for value in values):
+        return "warning"
+    return "healthy"
+
+
+def with_server_level(server: dict[str, Any]) -> dict[str, Any]:
+    return {**server, "status": server_level(server)}

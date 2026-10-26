@@ -17,6 +17,7 @@ class ServiceConfig:
 class ServerConfig:
     name: str
     target: str
+    cluster: str = "Default"
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,11 @@ def _service_from_item(item: str | dict[str, Any]) -> ServiceConfig:
 def _server_from_item(item: str | dict[str, Any]) -> ServerConfig:
     if isinstance(item, str):
         return ServerConfig(name=item, target=item)
-    return ServerConfig(name=str(item.get("name") or item["target"]), target=str(item["target"]))
+    return ServerConfig(
+        name=str(item.get("name") or item["target"]),
+        target=str(item["target"]),
+        cluster=str(item.get("cluster") or "Default"),
+    )
 
 
 def load_config(path: str | Path) -> AppConfig:
@@ -68,7 +73,7 @@ def load_config(path: str | Path) -> AppConfig:
         server_interval_seconds=int(raw.get("server_interval_seconds", 60)),
         failure_threshold=int(raw.get("failure_threshold", 3)),
         request_timeout_seconds=float(raw.get("request_timeout_seconds", 8)),
-        history_hours=int(raw.get("history_hours", 24)),
+        history_hours=int(raw.get("history_hours", 24 * 60)),
         services=[_service_from_item(item) for item in raw.get("services", [])],
         servers=[_server_from_item(item) for item in raw.get("servers", [])],
     )

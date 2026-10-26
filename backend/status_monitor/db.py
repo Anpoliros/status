@@ -30,7 +30,8 @@ CREATE INDEX IF NOT EXISTS idx_service_checks_recent
 CREATE TABLE IF NOT EXISTS servers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  ip TEXT NOT NULL UNIQUE
+  ip TEXT NOT NULL UNIQUE,
+  cluster TEXT NOT NULL DEFAULT 'Default'
 );
 
 CREATE TABLE IF NOT EXISTS server_metrics (
@@ -63,14 +64,18 @@ CREATE TABLE IF NOT EXISTS server_state (
 
 def connect(db_path: Path) -> sqlite3.Connection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 30000")
     return conn
 
 
 def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(servers)")}
+    if "cluster" not in columns:
+        conn.execute("ALTER TABLE servers ADD COLUMN cluster TEXT NOT NULL DEFAULT 'Default'")
     conn.commit()
 
 
@@ -112,10 +117,10 @@ def upsert_service(conn: sqlite3.Connection, service: ServiceConfig) -> int:
 def upsert_server(conn: sqlite3.Connection, server: ServerConfig) -> int:
     conn.execute(
         """
-        INSERT INTO servers(name, ip) VALUES (?, ?)
-        ON CONFLICT(ip) DO UPDATE SET name = excluded.name
+        INSERT INTO servers(name, ip, cluster) VALUES (?, ?, ?)
+        ON CONFLICT(ip) DO UPDATE SET name = excluded.name, cluster = excluded.cluster
         """,
-        (server.name, server.target),
+        (server.name, server.target, server.cluster),
     )
     return int(conn.execute("SELECT id FROM servers WHERE ip = ?", (server.target,)).fetchone()["id"])
 

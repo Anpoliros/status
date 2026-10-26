@@ -1,6 +1,6 @@
 # Lightweight Status Monitor
 
-一个小规模内网状态页：Python worker 采集 HTTP 服务和 Node Exporter 指标，SQLite 保存历史，React 展示当前状态与最近 24 小时趋势。
+一个小规模内网状态页：Python worker 采集 HTTP 服务和 Node Exporter 指标，SQLite 保存 60 天历史，React 展示 Machines、Services 和 History。
 
 ## 目录
 
@@ -20,12 +20,12 @@
     { "name": "Site 1", "url": "https://site1.com" }
   ],
   "servers": [
-    { "name": "App Server", "target": "100.64.0.10:9100" }
+    { "name": "App Server", "target": "100.64.0.10:9100", "cluster": "Default" }
   ]
 }
 ```
 
-`servers[].target` 可以写 `100.x.x.x:9100`，程序会自动请求 `http://100.x.x.x:9100/metrics`。
+`servers[].target` 可以写 `100.x.x.x:9100`，程序会自动请求 `http://100.x.x.x:9100/metrics`。`servers[].cluster` 只影响页面分组和筛选，不改变采集逻辑。
 
 ## 后端运行
 
@@ -43,37 +43,18 @@ API：
 - `GET /history/services?hours=24`
 - `GET /history/servers?hours=24`
 
-## Docker Compose
+## 生产运行（PM2）
+
+项目使用 PM2 运行采集 worker 和 API，不需要 Docker：
 
 ```bash
-docker compose up --build
+npm install
+npm run build
+pm2 start ecosystem.config.cjs
+pm2 save
 ```
 
-启动后访问：
-
-```text
-http://127.0.0.1:18080
-```
-
-Compose 会：
-
-- 构建 React 前端
-- 启动 Python worker 定时采集
-- 启动 Python API 并服务前端静态文件
-- 使用 `status-data` volume 保存 SQLite 数据库
-- 挂载当前目录的 `config.json` 到容器内 `/app/config.json`
-
-默认映射到宿主机 `18080` 端口，避免和本地开发 API 的 `8080` 冲突。如需改端口：
-
-```bash
-STATUS_PORT=8080 docker compose up --build
-```
-
-如果修改了前端代码，需要重新构建：
-
-```bash
-docker compose up --build
-```
+API 默认监听 `127.0.0.1:18080`，由现有反向代理转发，静态文件由 API 直接提供。修改前端后重新执行 `npm run build && pm2 restart status-api`；修改监控配置后执行 `pm2 restart status-worker`。
 
 ## 前端运行
 
@@ -88,7 +69,7 @@ npm run dev
 VITE_STATUS_API=http://127.0.0.1:8080 npm run dev
 ```
 
-前端每 30 秒刷新一次。API 不可用时，会读取 worker 生成的 `/status.json`。
+Machines 页面按 10/20/60 秒刷新，并在每次刷新时触发服务器指标采集；Services 页面沿用 10 分钟采集周期。API 不可用时，前端会读取 worker 生成的 `/status.json`。
 
 ## 网络流量说明
 

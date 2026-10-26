@@ -1,0 +1,28 @@
+/**
+ * @file ecosystem.config.cjs
+ * @description PM2 processes for the status collector and read-only web API.
+ */
+module.exports = {
+  apps: [
+    {
+      name: 'status-worker',
+      script: 'python3',
+      args: '-m backend.status_monitor.worker --config config.json',
+      cwd: __dirname,
+      interpreter: 'none',
+      autorestart: true,
+      watch: false,
+      env: { PYTHONUNBUFFERED: '1' },
+    },
+    {
+      name: 'status-api',
+      script: 'python3',
+      args: '-m backend.status_monitor.api --config config.json --host 127.0.0.1 --port 18080 --static-dir dist',
+      cwd: __dirname,
+      interpreter: 'none',
+      autorestart: true,
+      watch: false,
+      env: { PYTHONUNBUFFERED: '1' },
+    },
+  ],
+};

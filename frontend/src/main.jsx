@@ -1,31 +1,32 @@
+/**
+ * @file frontend/src/main.jsx
+ * @description Status dashboard with independent machine, service, and history views.
+ */
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Activity, CheckCircle2, ChevronDown, ChevronRight, Clock3, Cpu, HardDrive, Monitor, Moon, RefreshCcw, Server, Sun, WifiOff } from 'lucide-react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Activity, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, Filter, LayoutGrid, List, Moon, RefreshCcw, Server, Settings2, Sun, WifiOff } from 'lucide-react';
 import './styles.css';
 
 const API_BASE = import.meta.env.VITE_STATUS_API || '';
+const MACHINE_REFRESH = [10, 20, 60];
 const THEME_ORDER = ['system', 'light', 'dark'];
 
 function App() {
+  const [page, setPage] = useState('machines');
   const [status, setStatus] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState(() => window.localStorage.getItem('status-theme') || 'system');
+  const [refreshSeconds, setRefreshSeconds] = useState(60);
+  const [layout, setLayout] = useState('list');
+  const [theme, setTheme] = useState(() => localStorage.getItem('status-theme') || 'system');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedClusters, setSelectedClusters] = useState(null);
+  const scope = page === 'services' ? 'services' : page === 'machines' ? 'servers' : '';
 
-  async function loadStatus() {
+  async function loadStatus({ probe = scope } = {}) {
     try {
-      const response = await fetch(`${API_BASE}/status`, { cache: 'no-store' });
+      const query = probe ? `?probe=${probe}` : '';
+      const response = await fetch(`${API_BASE}/status${query}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       setStatus(await response.json());
       setError('');
@@ -44,294 +45,61 @@ function App() {
   }
 
   useEffect(() => {
+    setLoading(true);
     loadStatus();
-    const timer = window.setInterval(loadStatus, 30000);
+    const interval = page === 'history' ? 60000 : page === 'services' ? 600000 : refreshSeconds * 1000;
+    const timer = window.setInterval(() => loadStatus(), interval);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [page, refreshSeconds]);
 
   useEffect(() => {
     const applyTheme = () => {
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
-      document.documentElement.dataset.theme = resolved;
-      document.documentElement.dataset.themePreference = theme;
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = theme === 'system' ? (dark ? 'dark' : 'light') : theme;
     };
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     applyTheme();
-    window.localStorage.setItem('status-theme', theme);
+    localStorage.setItem('status-theme', theme);
     media.addEventListener('change', applyTheme);
     return () => media.removeEventListener('change', applyTheme);
   }, [theme]);
 
-  const serviceChart = useMemo(() => buildServiceChart(status?.history?.services || []), [status]);
-  const serverChart = useMemo(() => buildServerChart(status?.history?.servers || []), [status]);
-  const generatedAt = status?.generated_at ? new Date(status.generated_at).toLocaleString() : 'No data yet';
+  const clusters = useMemo(() => unique((status?.servers || []).map((server) => server.cluster || 'Default')), [status]);
+  const visibleServers = (status?.servers || []).filter((server) => !selectedClusters || selectedClusters.has(server.cluster || 'Default'));
 
   return (
     <main className="page">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Internal Status</p>
-          <h1>{titleFor(status?.overall_status)}</h1>
-        </div>
-        <div className="topActions">
-          <button className="iconButton" onClick={() => setTheme(nextTheme(theme))} aria-label={`Theme: ${theme}`} title={`Theme: ${theme}`}>
-            {themeIcon(theme)}
-          </button>
-          <button className="iconButton" onClick={loadStatus} aria-label="Refresh status" title="Refresh status">
-            <RefreshCcw size={18} />
-          </button>
-        </div>
-      </header>
-
-      <section className={`banner ${status?.overall_status || 'unknown'}`}>
-        <div className="bannerIcon">{bannerIcon(status?.overall_status)}</div>
-        <div>
-          <strong>{summaryFor(status?.overall_status)}</strong>
-          <span>Updated {generatedAt}</span>
-        </div>
-      </section>
-
-      {error && <div className="notice">{error}</div>}
-      {loading && <div className="notice">Loading current status...</div>}
-
-      <section className="grid two">
-        <Panel title="Services" icon={<Activity size={18} />}>
-          <div className="list">
-            {(status?.services || []).map((service) => (
-              <ServiceRow key={service.id || service.url} service={service} />
-            ))}
-            {!status?.services?.length && <EmptyState label="No services configured" />}
-          </div>
-        </Panel>
-
-        <Panel title="Servers" icon={<Server size={18} />}>
-          <div className="list">
-            {(status?.servers || []).map((server) => (
-              <ServerRow key={server.id || server.ip} server={server} />
-            ))}
-            {!status?.servers?.length && <EmptyState label="No servers configured" />}
-          </div>
-        </Panel>
-      </section>
-
-      <section className="grid two charts">
-        <Panel title="Service Latency, 24h" icon={<Clock3 size={18} />}>
-          <ChartFrame>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={serviceChart}>
-                <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
-                <XAxis dataKey="time" minTickGap={28} stroke="var(--muted)" />
-                <YAxis stroke="var(--muted)" width={42} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--text)' }} />
-                <Line type="monotone" dataKey="latency" name="Latency ms" stroke="var(--accent)" strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartFrame>
-        </Panel>
-
-        <Panel title="Server Load, 24h" icon={<Cpu size={18} />}>
-          <ChartFrame>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={serverChart}>
-                <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
-                <XAxis dataKey="time" minTickGap={28} stroke="var(--muted)" />
-                <YAxis stroke="var(--muted)" width={42} domain={[0, 100]} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid var(--border)', background: 'var(--panel)', color: 'var(--text)' }} />
-                <Area type="monotone" dataKey="cpu" name="CPU %" stroke="var(--text)" fill="var(--chart-cpu-fill)" strokeWidth={2} dot={false} isAnimationActive={false} />
-                <Area type="monotone" dataKey="memory" name="Memory %" stroke="var(--accent)" fill="var(--chart-memory-fill)" strokeWidth={2} dot={false} isAnimationActive={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartFrame>
-        </Panel>
-      </section>
+      <header className="topbar"><div><p className="eyebrow">Internal Status</p><h1>{page === 'history' ? 'History' : page === 'services' ? 'Services' : 'Machines'}</h1></div><div className="topActions"><button className="iconButton" onClick={() => setTheme(nextTheme(theme))} aria-label={`Theme: ${theme}`} title={`Theme: ${theme}`}>{themeIcon(theme)}</button><button className="iconButton" onClick={() => loadStatus()} aria-label="Refresh status" title="Refresh status"><RefreshCcw size={18} /></button></div></header>
+      <nav className="navigation" aria-label="Primary navigation"><button className="navIcon" aria-label="Dashboard"><Activity size={18} /></button><div className="segmented"><button className={page === 'machines' ? 'selected' : ''} onClick={() => setPage('machines')}>Machines</button><button className={page === 'services' ? 'selected' : ''} onClick={() => setPage('services')}>Services</button></div><div className="segmented"><button className={page !== 'history' ? 'selected' : ''} onClick={() => setPage('machines')}>Status</button><button className={page === 'history' ? 'selected' : ''} onClick={() => setPage('history')}>History</button></div></nav>
+      <section className={`banner ${status?.overall_status || 'unknown'}`}><StatusIcon status={status?.overall_status} /><div><strong>{summaryFor(status?.overall_status)}</strong><span>Updated {formatDate(status?.generated_at)}</span></div></section>
+      {error && <div className="notice">{error}</div>}{loading && <div className="notice">Loading current status...</div>}
+      {page === 'machines' && <MachinesView servers={visibleServers} clusters={clusters} selectedClusters={selectedClusters} setSelectedClusters={setSelectedClusters} filterOpen={filterOpen} setFilterOpen={setFilterOpen} refreshSeconds={refreshSeconds} setRefreshSeconds={setRefreshSeconds} layout={layout} setLayout={setLayout} />}
+      {page === 'services' && <ServicesView services={status?.services || []} />}
+      {page === 'history' && <HistoryView history={status?.history} />}
     </main>
   );
 }
 
-function Panel({ title, icon, children }) {
-  return (
-    <section className="panel">
-      <div className="panelHeader">
-        <div className="panelTitle">{icon}<h2>{title}</h2></div>
-      </div>
-      {children}
-    </section>
-  );
+function MachinesView({ servers, clusters, selectedClusters, setSelectedClusters, filterOpen, setFilterOpen, refreshSeconds, setRefreshSeconds, layout, setLayout }) {
+  return <><ViewToolbar><div className="toolbarGroup"><span className="toolbarLabel">Refresh</span><div className="segmented">{MACHINE_REFRESH.map((seconds) => <button key={seconds} className={refreshSeconds === seconds ? 'selected' : ''} onClick={() => setRefreshSeconds(seconds)}>{seconds}s</button>)}</div></div><div className="toolbarGroup"><button className="iconButton small" onClick={() => setFilterOpen((open) => !open)} aria-expanded={filterOpen} title="Filter machines"><Filter size={16} /></button><div className="segmented"><button className={layout === 'list' ? 'selected' : ''} onClick={() => setLayout('list')} aria-label="List view"><List size={16} /></button><button className={layout === 'grid' ? 'selected' : ''} onClick={() => setLayout('grid')} aria-label="Grid view"><LayoutGrid size={16} /></button></div></div></ViewToolbar>{filterOpen && <FilterPanel clusters={clusters} selectedClusters={selectedClusters} setSelectedClusters={setSelectedClusters} />}{clusters.map((cluster) => { const items = servers.filter((server) => (server.cluster || 'Default') === cluster); if (!items.length) return null; return <section className="cluster" key={cluster}><div className="clusterHeader"><h2>{cluster}</h2><span>{items.length} machines</span></div><div className={`machineList ${layout}`}>{items.map((server) => <MachineCard key={server.id || server.ip} server={server} />)}</div></section>; })}{!servers.length && <EmptyState label="No machines selected" />}</>;
 }
 
-function ServiceRow({ service }) {
-  const up = service.status === 'up';
-  return (
-    <article className="row">
-      <div className="rowMain">
-        <span className={`statusDot ${up ? 'up' : 'down'}`} />
-        <div>
-          <h3>{service.name}</h3>
-          <p>{service.url}</p>
-        </div>
-      </div>
-      <div className="metricPill">
-        {up ? <CheckCircle2 size={16} /> : <WifiOff size={16} />}
-        <span>{up ? 'Up' : 'Down'}</span>
-        <strong>{service.latency_ms == null ? '-' : `${service.latency_ms} ms`}</strong>
-      </div>
-    </article>
-  );
-}
-
-function ServerRow({ server }) {
-  const [collapsed, setCollapsed] = useState(true);
-  const healthy = serverHealthy(server);
-
-  return (
-    <article className={`serverRow ${collapsed ? 'collapsed' : ''}`}>
-      <button
-        className="serverTitle serverToggle"
-        onClick={() => setCollapsed((value) => !value)}
-        aria-expanded={!collapsed}
-        title={collapsed ? 'Expand server details' : 'Collapse server details'}
-      >
-        <div className="rowMain">
-          <span className={`statusDot ${healthy ? 'up' : 'down'}`} />
-          <div>
-            <h3>{server.name}</h3>
-          </div>
-        </div>
-        <div className="serverSummary">
-          <span className={`healthPill ${healthy ? 'up' : 'down'}`}>
-            {healthy ? <CheckCircle2 size={15} /> : <WifiOff size={15} />}
-            {healthy ? 'Healthy' : 'No data'}
-          </span>
-          {collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-        </div>
-      </button>
-
-      {collapsed ? (
-        <div className="collapsedSummary">
-          <span>Network {formatBytesPerMinute(server.network_in)} in / {formatBytesPerMinute(server.network_out)} out</span>
-        </div>
-      ) : (
-        <>
-          <MetricBar label="CPU" value={server.cpu_usage} icon={<Cpu size={15} />} />
-          <MetricBar label="Memory" value={server.memory_usage} icon={<Activity size={15} />} />
-          <MetricBar label="Disk" value={server.disk_usage} icon={<HardDrive size={15} />} />
-          <div className="network">
-            <span>Network, last minute</span>
-            <strong>{formatBytesPerMinute(server.network_in)} in / {formatBytesPerMinute(server.network_out)} out</strong>
-          </div>
-        </>
-      )}
-    </article>
-  );
-}
-
-function MetricBar({ label, value, icon }) {
-  const normalized = value == null ? 0 : Math.max(0, Math.min(100, value));
-  return (
-    <div className="barRow">
-      <div className="barLabel">{icon}<span>{label}</span><strong>{value == null ? '-' : `${value.toFixed(1)}%`}</strong></div>
-      <div className="barTrack"><span style={{ width: `${normalized}%` }} /></div>
-    </div>
-  );
-}
-
-function ChartFrame({ children }) {
-  return <div className="chartFrame">{children}</div>;
-}
-
-function EmptyState({ label }) {
-  return <div className="empty">{label}</div>;
-}
-
-function buildServiceChart(items) {
-  return items.slice(-180).map((item) => ({
-    time: formatTime(item.timestamp),
-    latency: item.latency_ms,
-  }));
-}
-
-function buildServerChart(items) {
-  const grouped = new Map();
-  for (const item of items) {
-    if (!item.timestamp) continue;
-    const bucket = item.timestamp.slice(0, 16);
-    const row = grouped.get(bucket) || { timestamp: item.timestamp, cpuTotal: 0, cpuCount: 0, memoryTotal: 0, memoryCount: 0 };
-    if (item.cpu_usage != null) {
-      row.cpuTotal += item.cpu_usage;
-      row.cpuCount += 1;
-    }
-    if (item.memory_usage != null) {
-      row.memoryTotal += item.memory_usage;
-      row.memoryCount += 1;
-    }
-    grouped.set(bucket, row);
-  }
-
-  return Array.from(grouped.values()).slice(-240).map((item) => ({
-    time: formatTime(item.timestamp),
-    cpu: item.cpuCount ? rounded(item.cpuTotal / item.cpuCount) : null,
-    memory: item.memoryCount ? rounded(item.memoryTotal / item.memoryCount) : null,
-  }));
-}
-
-function rounded(value) {
-  return value == null ? null : Number(value.toFixed(1));
-}
-
-function formatTime(value) {
-  if (!value) return '';
-  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatBytes(value) {
-  if (value == null) return '-';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let size = value;
-  let unit = 0;
-  while (size >= 1024 && unit < units.length - 1) {
-    size /= 1024;
-    unit += 1;
-  }
-  return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
-}
-
-function formatBytesPerMinute(value) {
-  if (value == null) return '-';
-  return `${formatBytes(value)}/min`;
-}
-
-function serverHealthy(server) {
-  return [server.cpu_usage, server.memory_usage, server.disk_usage].some((value) => value != null);
-}
-
-function nextTheme(theme) {
-  const index = THEME_ORDER.indexOf(theme);
-  return THEME_ORDER[(index + 1) % THEME_ORDER.length];
-}
-
-function themeIcon(theme) {
-  if (theme === 'light') return <Sun size={18} />;
-  if (theme === 'dark') return <Moon size={18} />;
-  return <Monitor size={18} />;
-}
-
-function titleFor(status) {
-  if (status === 'operational') return 'All systems operational';
-  if (status === 'degraded') return 'Some systems need attention';
-  return 'Status is initializing';
-}
-
-function summaryFor(status) {
-  if (status === 'operational') return 'All monitored services are healthy.';
-  if (status === 'degraded') return 'At least one monitored service is currently down.';
-  return 'Waiting for the first monitoring cycle.';
-}
-
-function bannerIcon(status) {
-  if (status === 'operational') return <CheckCircle2 size={24} />;
-  if (status === 'degraded') return <WifiOff size={24} />;
-  return <Clock3 size={24} />;
-}
+function ServicesView({ services }) { return <><ViewToolbar><span className="toolbarLabel">Automatic refresh every 10 minutes</span></ViewToolbar><section className="contentCard"><div className="serviceList">{services.map((service) => <ServiceCard key={service.id || service.url} service={service} />)}{!services.length && <EmptyState label="No services configured" />}</div></section></>; }
+function HistoryView({ history }) { const services = unique((history?.services || []).map((item) => item.url)); return <><ViewToolbar><span className="toolbarLabel"><CalendarDays size={16} /> Last 60 days</span></ViewToolbar><section className="contentCard"><div className="historyList">{services.map((url) => <HistoryRow key={url} url={url} items={(history?.services || []).filter((item) => item.url === url)} />)}{!services.length && <EmptyState label="No history yet" />}</div></section></>; }
+function ViewToolbar({ children }) { return <div className="viewToolbar">{children}</div>; }
+function FilterPanel({ clusters, selectedClusters, setSelectedClusters }) { const active = selectedClusters || new Set(clusters); const toggle = (cluster) => { const next = new Set(active); if (next.has(cluster)) next.delete(cluster); else next.add(cluster); setSelectedClusters(next.size === clusters.length ? null : next); }; return <aside className="filterPanel"><div className="filterHeader"><strong>Display</strong><Settings2 size={16} /></div>{clusters.map((cluster) => <label className="checkRow" key={cluster}><span>{cluster}</span><input type="checkbox" checked={active.has(cluster)} onChange={() => toggle(cluster)} /></label>)}</aside>; }
+function MachineCard({ server }) { const [collapsed, setCollapsed] = useState(true); const level = server.status || 'critical'; return <article className={`machineCard ${collapsed ? 'collapsed' : ''}`}><button className="machineHeader" onClick={() => setCollapsed((value) => !value)} aria-expanded={!collapsed}><h3>{server.name}</h3><span className={`statusDot ${level}`} /><span className="machineToggle">{collapsed ? <ChevronRight size={17} /> : <ChevronDown size={17} />}</span></button>{collapsed ? <div className="machineNetwork">NET <span>IN {formatRate(server.network_in)}</span><span>OUT {formatRate(server.network_out)}</span></div> : <div className="metricGrid"><MetricRing label="CPU" value={server.cpu_usage} /><MetricRing label="RAM" value={server.memory_usage} /><MetricRing label="DISK" value={server.disk_usage} /><div className="networkMetric"><strong>NET</strong><span>IN {formatRate(server.network_in)}</span><span>OUT {formatRate(server.network_out)}</span></div></div>}</article>; }
+function ServiceCard({ service }) { const level = service.status === 'up' ? 'healthy' : 'critical'; return <article className="serviceCard"><div className="serviceIdentity"><span className={`statusDot ${level}`} /><div><h3>{service.name}</h3><p>{service.url}</p></div></div><div className="serviceMetric">{level === 'healthy' ? <CheckCircle2 size={15} /> : <WifiOff size={15} />}<span>{service.latency_ms == null ? 'Down' : `${service.latency_ms} ms`}</span></div></article>; }
+function MetricRing({ label, value }) { const percent = value == null ? 0 : Math.max(0, Math.min(100, value)); return <div className="metricRing"><div className="ring" style={{ '--percent': `${percent * 3.6}deg` }}><span>{value == null ? '-' : `${value.toFixed(1)}%`}</span></div><strong>{label}</strong></div>; }
+function HistoryRow({ url, items }) { const days = Array.from({ length: 60 }, (_, index) => { const date = new Date(); date.setHours(0, 0, 0, 0); date.setDate(date.getDate() - (59 - index)); const day = date.toISOString().slice(0, 10); const checks = items.filter((item) => item.timestamp?.slice(0, 10) === day); if (!checks.length) return { day, level: 'missing' }; return { day, level: checks.some((item) => item.status === 'down') ? 'critical' : 'healthy' }; }); const uptime = Math.round((days.filter((item) => item.level === 'healthy').length / Math.max(1, days.filter((item) => item.level !== 'missing').length)) * 100); return <div className="historyRow"><div className="historyIdentity"><strong>{url.replace(/^https?:\/\//, '')}</strong><span className="statusDot healthy" /></div><div className="uptimeBar">{days.map((item) => <span key={item.day} className={item.level} title={`${item.day}: ${item.level}`} />)}</div><div className="historyLabels"><span>60 days ago</span><strong>{uptime}% uptime</strong><span>Today</span></div></div>; }
+function EmptyState({ label }) { return <div className="empty">{label}</div>; }
+function unique(values) { return [...new Set(values)]; }
+function formatDate(value) { return value ? new Date(value).toLocaleString() : 'No data yet'; }
+function formatRate(value) { return value == null ? '-' : `${formatBytes(value)}/s`; }
+function formatBytes(value) { if (value == null) return '-'; const units = ['B', 'KB', 'MB', 'GB', 'TB']; let size = value; let unit = 0; while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit += 1; } return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`; }
+function nextTheme(theme) { return THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]; }
+function themeIcon(theme) { return theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : <Settings2 size={18} />; }
+function summaryFor(status) { return status === 'healthy' ? 'All monitored systems are healthy.' : status === 'warning' ? 'Some machines are under heavy load.' : status === 'critical' ? 'One or more systems need immediate attention.' : 'Waiting for the first monitoring cycle.'; }
+function StatusIcon({ status }) { return status === 'healthy' ? <CheckCircle2 size={24} /> : status === 'warning' ? <CircleAlert size={24} /> : status === 'critical' ? <WifiOff size={24} /> : <Server size={24} />; }
 
 createRoot(document.getElementById('root')).render(<App />);

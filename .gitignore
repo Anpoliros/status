@@ -2,6 +2,7 @@ data/*.db
 data/*.db-*
 node_modules/
 dist/
+frontend/public/status.json
 .vite/
 __pycache__/
 *.pyc

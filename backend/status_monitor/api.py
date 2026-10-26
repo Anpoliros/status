@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import mimetypes
 from http import HTTPStatus
@@ -9,6 +10,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from .config import AppConfig, load_config
+from .collector import run_server_collection, run_service_checks
 from .db import connect, init_db, sync_config
 from .status import build_status, server_history, service_history
 
@@ -19,7 +21,7 @@ class StatusHandler(BaseHTTPRequestHandler):
 
     def do_HEAD(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path in {"/status", "/healthz", "/history/services", "/history/servers"}:
+        if parsed.path in {"/status", "/check", "/healthz", "/history/services", "/history/servers"}:
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
@@ -32,19 +34,40 @@ class StatusHandler(BaseHTTPRequestHandler):
         query = parse_qs(parsed.query)
         hours = int(query.get("hours", [self.config.history_hours])[0])
 
+        if parsed.path == "/healthz":
+            self._json({"ok": True})
+            return
+        if parsed.path not in {"/status", "/check", "/history/services", "/history/servers"}:
+            self._static(parsed.path)
+            return
+
         with connect(self.config.database) as conn:
-            init_db(conn)
-            sync_config(conn, self.config)
             if parsed.path == "/status":
+                probe = query.get("probe", [""])[0]
+                if probe in {"servers", "services", "all"}:
+                    self._probe(conn, probe)
                 self._json(build_status(conn, self.config))
+            elif parsed.path == "/check":
+                status = build_status(conn, self.config)
+                unavailable = [item["name"] for item in status["services"] if item["status"] != "up"]
+                unavailable.extend(item["name"] for item in status["servers"] if item["status"] == "critical")
+                level = "healthy" if not unavailable else "alert" if len(unavailable) >= 3 else "attention"
+                self._json({"overall_status": level, "unavailable": unavailable})
             elif parsed.path == "/history/services":
                 self._json({"items": service_history(conn, hours)})
             elif parsed.path == "/history/servers":
                 self._json({"items": server_history(conn, hours)})
-            elif parsed.path == "/healthz":
-                self._json({"ok": True})
             else:
                 self._static(parsed.path)
+
+    def _probe(self, conn, scope: str) -> None:
+        async def collect() -> None:
+            if scope in {"servers", "all"}:
+                await run_server_collection(conn, self.config)
+            if scope in {"services", "all"}:
+                await run_service_checks(conn, self.config)
+
+        asyncio.run(collect())
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}")
@@ -88,6 +111,9 @@ class StatusHandler(BaseHTTPRequestHandler):
 
 
 def run_server(config: AppConfig, host: str, port: int, static_dir: str | None = None) -> None:
+    with connect(config.database) as conn:
+        init_db(conn)
+        sync_config(conn, config)
     StatusHandler.config = config
     StatusHandler.static_dir = Path(static_dir) if static_dir else None
     server = ThreadingHTTPServer((host, port), StatusHandler)
