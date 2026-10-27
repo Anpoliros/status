@@ -30,45 +30,42 @@ button { color: inherit; }
 .page { width: min(1220px, calc(100% - 48px)); margin: 0 auto; padding: 34px 0 64px; }
 .topbar { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .eyebrow { margin: 0 0 5px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
-h1, h2, h3, p { margin: 0; } h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 500; }
+h1, h2, h3, p { margin: 0; } h2 { font-size: 20px; } h3 { font-size: 18px; } h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 500; }
 .topActions, .toolbarGroup, .navigation { display: flex; align-items: center; gap: 8px; }
-.iconButton, .navIcon { width: 42px; height: 42px; display: inline-grid; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--card); cursor: pointer; box-shadow: var(--shadow); }
+.iconButton { width: 42px; height: 42px; display: inline-grid; place-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--card); cursor: pointer; box-shadow: var(--shadow); }
 .iconButton.small { width: 34px; height: 34px; }
-.iconButton:hover, .navIcon:hover { background: var(--surface); }
+.iconButton:hover { background: var(--surface); }
 .navigation { margin: 0; gap: 12px; }
 .segmented { display: inline-flex; align-items: center; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); box-shadow: var(--shadow); }
 .segmented button { min-height: 32px; padding: 4px 13px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+.segmented.iconSegments button { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; flex-shrink: 0; }
 .segmented button.selected { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); }
 .banner { min-height: 82px; display: flex; align-items: center; gap: 14px; margin: 0 0 18px; padding: 18px 20px; border: 1px solid #bfe4c5; border-radius: 9px; color: #205b2a; background: #effaf0; }
 .banner.warning { border-color: #f1d98a; color: #735d11; background: #fff9df; } .banner.critical { border-color: #efb3ad; color: #8c2a23; background: #fff0ee; } .banner.unknown { border-color: var(--border); color: var(--muted); background: var(--surface); }
 .banner strong, .banner span { display: block; } .banner span { margin-top: 4px; color: var(--muted); font-size: 13px; }
 .notice { margin: 0 0 16px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); background: var(--card); }
 .toolbarLabel { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
-.filterPanel { width: min(360px, 100%); position: absolute; z-index: 5; margin-top: -8px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: 0 12px 32px #0002; }
+.filterPanel { width: min(360px, 100%); position: absolute; z-index: 5; margin-top: -3px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: 0 12px 32px #0002; }
 .filterHeader, .checkRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .filterHeader { margin-bottom: 12px; } .checkRow { min-height: 38px; border-top: 1px solid var(--border-soft); }
 .checkRow input { width: 17px; height: 17px; }
-.clusterBlock { margin: 24px 0 28px; } .clusterHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px 4px; } .clusterHeader h2 { font-size: 19px; font-weight: 500; } .clusterHeader span { color: var(--muted); font-size: 12px; }
+.clusterBlock { margin: 24px 0 28px; } .clusterHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px 4px; } .clusterHeader h2 { font-size: 20px; font-weight: 500; } .clusterHeader span { color: var(--muted); font-size: 12px; }
 .machineList { display: grid; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); } .machineList.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .machineCard, .serviceCard { min-width: 0; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); box-shadow: var(--shadow); }
-.machineCard { padding: 14px 16px; } .machineCard.collapsed { padding-bottom: 10px; }
-.machineHeader { width: 100%; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: transparent; text-align: left; cursor: pointer; } .machineHeader h3 { flex: 1; font-size: 20px; font-weight: 500; } .machineToggle { display: inline-flex; color: var(--muted); }
+.machineCard { padding: 14px 16px; cursor: pointer; }
+.machineCard:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; } .machineCard.collapsed { padding-bottom: 10px; }
+.machineHeader { width: 100%; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: transparent; text-align: left; } .machineHeader h3 { flex: 1; font-size: 18px; font-weight: 500; }
 .statusDot { width: 12px; height: 12px; flex: 0 0 auto; display: inline-block; border-radius: 50%; background: var(--missing); } .statusDot.healthy { background: var(--success); } .statusDot.warning { background: var(--warning); } .statusDot.critical { background: var(--danger); }
 .machineNetwork { display: flex; align-items: center; gap: 13px; margin-top: 13px; color: var(--muted); font-size: 12px; } .machineNetwork span { color: var(--foreground); }
 .metricGrid { display: grid; grid-template-columns: repeat(3, 1fr) 1.3fr; align-items: center; gap: 14px; margin-top: 16px; } .metricRing { display: flex; align-items: center; gap: 8px; } .metricRing strong { font-size: 12px; font-weight: 500; }
 .ring { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--border) var(--percent), transparent 0); position: relative; } .ring::after { content: ''; position: absolute; inset: 7px; border-radius: inherit; background: var(--surface); } .ring span { position: relative; z-index: 1; font-size: 10px; }
 .networkMetric { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; color: var(--muted); font-size: 12px; } .networkMetric strong { flex-basis: 100%; color: var(--foreground); font-weight: 500; }
 .contentCard { padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); } .serviceList, .historyList { display: grid; gap: 8px; }
-.serviceCard { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; } .serviceIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; } .serviceIdentity h3 { font-size: 16px; font-weight: 500; } .serviceIdentity p { margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; } .serviceMetric { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
-.historyControls { display: flex; justify-content: flex-end; margin: 4px 0 16px; } .historySection { margin: 18px 0 26px; } .historySection > h2 { margin: 0 0 10px 4px; font-size: 19px; font-weight: 500; } .historyRow { padding: 16px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); } .historyIdentity { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; } .historyIdentity strong { font-size: 16px; font-weight: 500; } .uptimeBar { height: 38px; display: grid; grid-template-columns: repeat(var(--segments, 60), 1fr); gap: 3px; padding: 4px; border-radius: 5px; background: var(--surface); } .uptimeBar span { border-radius: 1px; background: var(--missing); } .uptimeBar span.healthy { background: #74b52a; } .uptimeBar span.warning { background: var(--warning); } .uptimeBar span.critical { background: var(--danger); } .historyLabels { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 12px; } .historyLabels strong { color: var(--foreground); font-weight: 500; }
+.serviceCard { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; } .serviceIdentity { display: flex; align-items: center; gap: 10px; min-width: 0; } .serviceIdentity h3 { font-size: 18px; font-weight: 500; } .serviceIdentity p { margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; } .serviceMetric { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+.historyControls { display: flex; justify-content: flex-end; margin: 4px 0 16px; } .historySection { margin: 18px 0 26px; } .historySection > h2 { margin: 0 0 10px 4px; font-size: 20px; font-weight: 500; } .historyRow { padding: 16px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); } .historyIdentity { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; } .historyIdentity strong { font-size: 16px; font-weight: 500; } .uptimeBar { height: 38px; display: grid; grid-template-columns: repeat(var(--segments, 60), 1fr); gap: 3px; padding: 4px; border-radius: 5px; background: var(--surface); } .uptimeBar span { border-radius: 1px; background: var(--missing); } .uptimeBar span.healthy { background: #74b52a; } .uptimeBar span.warning { background: var(--warning); } .uptimeBar span.critical { background: var(--danger); } .historyLabels { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 12px; } .historyLabels strong { color: var(--foreground); font-weight: 500; }
 .empty { min-height: 100px; display: grid; place-items: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 8px; }
 @media (max-width: 800px) { .page { width: min(100% - 24px, 1220px); padding-top: 20px; } .navigation { flex-wrap: wrap; } .machineList.grid { grid-template-columns: 1fr; } .metricGrid { grid-template-columns: repeat(2, 1fr); } .networkMetric { grid-column: 1 / -1; } .serviceCard { align-items: flex-start; flex-direction: column; } .serviceMetric { padding-left: 22px; } }
 
-/* ============================== Theme slider and always-visible machine metrics ============================== */
-.themeSlider { position: relative; width: 126px; height: 42px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
-.themeThumb { position: absolute; top: 3px; left: 3px; width: 38px; height: 34px; border-radius: 6px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); transform: translateX(calc(var(--theme-index) * 40px)); transition: transform 160ms ease; }
-.themeIcons { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; pointer-events: none; }
-.themeSlider input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.themeSlider:focus-within { outline: 2px solid var(--primary); outline-offset: 3px; }
+/* ============================== Always-visible machine metrics ============================== */
 .machineOverview { position: relative; display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 4fr); gap: 20px; align-items: center; }
 .machineHeader { position: static; padding-right: 12px; }
 .machineHeader .statusDot { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
@@ -81,6 +78,9 @@ h1, h2, h3, p { margin: 0; } h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight
 .ring { flex-shrink: 0; background: conic-gradient(var(--gauge-color) var(--percent), color-mix(in srgb, var(--gauge-color) 15%, transparent) 0); }
 .networkMetric { justify-content: center; text-align: center; }
 .networkMetric strong { flex-basis: auto; }
+.networkRates { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 10px; }
+.machineList.grid .networkMetric { display: grid; grid-template-columns: 38px 1fr 54px; gap: 8px; text-align: left; }
+.machineList.grid .networkRates { grid-column: 2 / -1; text-align: center; }
 .machineList.grid .machineOverview { display: block; }
 .machineList.grid .machineHeader .statusDot { position: static; transform: none; }
 .machineList.grid .metricGrid { display: grid; grid-template-columns: 1fr; padding: 0; margin-top: 20px; gap: 14px; }
@@ -94,4 +94,3 @@ h1, h2, h3, p { margin: 0; } h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight
 .machineDetails dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 1000px) { .topbar { flex-wrap: wrap; } .machineOverview { grid-template-columns: 1fr; } .machineOverview .metricGrid { padding-right: 0; } .machineHeader .statusDot { position: static; transform: none; } }
 @media (max-width: 600px) { .machineOverview .metricGrid { grid-template-columns: repeat(3, 1fr); } .machineOverview .networkMetric { grid-column: 1 / -1; } .metricRing { flex-direction: column; } .topActions { flex-wrap: wrap; } }
-@media (prefers-reduced-motion: reduce) { .themeThumb { transition: none; } }

@@ -3,7 +3,6 @@
  * @description Compact list gauges and grid bars stay visible; expansion adds collection details.
  */
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import { gaugeLevel } from './status-utils.js';
 
 const METRICS = [
@@ -15,23 +14,34 @@ const METRICS = [
 export function MachineCard({ server, layout }) {
   const [expanded, setExpanded] = useState(false);
   const detailsId = `machine-details-${server.id}`;
+  const toggle = () => setExpanded((value) => !value);
+  // The entire card is one disclosure target, including its visible metrics.
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggle();
+    }
+  };
   return (
-    <article className={`machineCard ${expanded ? 'expanded' : 'collapsed'}`}>
+    <article className={`machineCard ${expanded ? 'expanded' : 'collapsed'}`}
+      role="button" tabIndex={0} aria-label={`${server.name} details`}
+      aria-expanded={expanded} aria-controls={expanded ? detailsId : undefined}
+      onClick={toggle} onKeyDown={handleKeyDown}>
       <div className="machineOverview">
-        <button className="machineHeader" onClick={() => setExpanded(!expanded)}
-          aria-expanded={expanded} aria-controls={detailsId}>
+        <div className="machineHeader">
           <h3>{server.name}</h3>
           <span className={`statusDot ${server.status || 'critical'}`} />
-          <span className="machineToggle">{expanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}</span>
-        </button>
+        </div>
         <div className="metricGrid">
           {METRICS.map(([label, field]) => (
             <Gauge key={field} label={label} value={server[field]} bars={layout === 'grid'} />
           ))}
           <div className="networkMetric">
             <strong>NET</strong>
-            <span>IN {formatRate(server.network_in)}</span>
-            <span>OUT {formatRate(server.network_out)}</span>
+            <div className="networkRates">
+              <span>IN {formatRate(server.network_in)}</span>
+              <span>OUT {formatRate(server.network_out)}</span>
+            </div>
           </div>
         </div>
       </div>
