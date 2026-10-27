@@ -6,7 +6,8 @@ module.exports = {
   apps: [
     {
       name: 'status-worker',
-      script: 'python3',
+      // Use the system interpreter instead of inheriting another project's virtualenv.
+      script: '/usr/bin/python3',
       args: '-m backend.status_monitor.worker --config config.json',
       cwd: __dirname,
       interpreter: 'none',
@@ -16,7 +17,8 @@ module.exports = {
     },
     {
       name: 'status-api',
-      script: 'python3',
+      // Use the system interpreter instead of inheriting another project's virtualenv.
+      script: '/usr/bin/python3',
       args: '-m backend.status_monitor.api --config config.json --host 127.0.0.1 --port 18080 --static-dir dist',
       cwd: __dirname,
       interpreter: 'none',
