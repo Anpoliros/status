@@ -121,3 +121,18 @@ WantedBy=multi-user.target
 DELETE FROM service_checks WHERE timestamp < datetime('now', '-30 days');
 DELETE FROM server_metrics WHERE timestamp < datetime('now', '-30 days');
 ```
+
+## 展示与测试
+
+主题滑块从左到右为浅色、深色、自动（显示器图标），选择保存在本地。
+机器列表默认显示 CPU/RAM/DISK 圆环，网格卡片显示横条；无需展开即可查看指标和网络速率。
+展开补充端点、集群、最近采集时间与状态。指标颜色为低于 60% 绿色、60% 起黄色、80% 起红色；此配色独立于服务器告警判定。
+网络速率显示为 bytes/s（由采集结果 bytes/min 换算）。
+服务历史中，时间段内全成功显示绿色、全失败显示红色、成功失败混合显示黄色、无数据为灰色，适用于 60 天与 48 小时视图。
+
+```bash
+npm run lint
+npm run build
+node --test tests/status-utils.test.js
+python3 -m unittest discover -s tests -v
+```

@@ -62,3 +62,36 @@ h1, h2, h3, p { margin: 0; } h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight
 .historyControls { display: flex; justify-content: flex-end; margin: 4px 0 16px; } .historySection { margin: 18px 0 26px; } .historySection > h2 { margin: 0 0 10px 4px; font-size: 19px; font-weight: 500; } .historyRow { padding: 16px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); } .historyIdentity { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; } .historyIdentity strong { font-size: 16px; font-weight: 500; } .uptimeBar { height: 38px; display: grid; grid-template-columns: repeat(var(--segments, 60), 1fr); gap: 3px; padding: 4px; border-radius: 5px; background: var(--surface); } .uptimeBar span { border-radius: 1px; background: var(--missing); } .uptimeBar span.healthy { background: #74b52a; } .uptimeBar span.warning { background: var(--warning); } .uptimeBar span.critical { background: var(--danger); } .historyLabels { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 12px; } .historyLabels strong { color: var(--foreground); font-weight: 500; }
 .empty { min-height: 100px; display: grid; place-items: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 8px; }
 @media (max-width: 800px) { .page { width: min(100% - 24px, 1220px); padding-top: 20px; } .navigation { flex-wrap: wrap; } .machineList.grid { grid-template-columns: 1fr; } .metricGrid { grid-template-columns: repeat(2, 1fr); } .networkMetric { grid-column: 1 / -1; } .serviceCard { align-items: flex-start; flex-direction: column; } .serviceMetric { padding-left: 22px; } }
+
+/* ============================== Theme slider and always-visible machine metrics ============================== */
+.themeSlider { position: relative; width: 126px; height: 42px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+.themeThumb { position: absolute; top: 3px; left: 3px; width: 38px; height: 34px; border-radius: 6px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); transform: translateX(calc(var(--theme-index) * 40px)); transition: transform 160ms ease; }
+.themeIcons { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; justify-items: center; pointer-events: none; }
+.themeSlider input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.themeSlider:focus-within { outline: 2px solid var(--primary); outline-offset: 3px; }
+.machineOverview { position: relative; display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 4fr); gap: 20px; align-items: center; }
+.machineHeader { position: static; padding-right: 12px; }
+.machineHeader .statusDot { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+.machineOverview .metricGrid { margin: 0; padding-right: 24px; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(140px, 1.4fr); gap: 12px; }
+.machineOverview .metricRing { justify-content: center; }
+.gauge-healthy { --gauge-color: var(--success); }
+.gauge-warning { --gauge-color: var(--warning); }
+.gauge-critical { --gauge-color: var(--danger); }
+.gauge-missing { --gauge-color: var(--missing); }
+.ring { flex-shrink: 0; background: conic-gradient(var(--gauge-color) var(--percent), color-mix(in srgb, var(--gauge-color) 15%, transparent) 0); }
+.networkMetric { justify-content: center; text-align: center; }
+.networkMetric strong { flex-basis: auto; }
+.machineList.grid .machineOverview { display: block; }
+.machineList.grid .machineHeader .statusDot { position: static; transform: none; }
+.machineList.grid .metricGrid { display: grid; grid-template-columns: 1fr; padding: 0; margin-top: 20px; gap: 14px; }
+.metricBar { display: grid; grid-template-columns: 38px 1fr 54px; gap: 8px; align-items: center; font-size: 12px; }
+.metricBar strong { font-weight: 500; }
+.metricBar > span { text-align: right; font-variant-numeric: tabular-nums; }
+.metricTrack { height: 7px; border-radius: 5px; background: color-mix(in srgb, var(--gauge-color) 15%, transparent); overflow: hidden; }
+.metricTrack span { display: block; height: 100%; width: var(--fill); background: var(--gauge-color); }
+.machineDetails { border-top: 1px solid var(--border-soft); padding-top: 14px; margin: 16px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; font-size: 12px; }
+.machineDetails dt { color: var(--muted); margin-bottom: 4px; }
+.machineDetails dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 1000px) { .topbar { flex-wrap: wrap; } .machineOverview { grid-template-columns: 1fr; } .machineOverview .metricGrid { padding-right: 0; } .machineHeader .statusDot { position: static; transform: none; } }
+@media (max-width: 600px) { .machineOverview .metricGrid { grid-template-columns: repeat(3, 1fr); } .machineOverview .networkMetric { grid-column: 1 / -1; } .metricRing { flex-direction: column; } .topActions { flex-wrap: wrap; } }
+@media (prefers-reduced-motion: reduce) { .themeThumb { transition: none; } }
