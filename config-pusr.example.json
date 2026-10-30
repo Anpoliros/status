@@ -1,0 +1,19 @@
+{
+  "database": "data/status-pusr.db",
+  "status_json": "frontend/public/status-pusr.json",
+  "service_interval_seconds": 600,
+  "server_interval_seconds": 60,
+  "failure_threshold": 3,
+  "request_timeout_seconds": 8,
+  "history_hours": 1440,
+  "prometheus": {
+    "url": "http://100.123.29.123:9090",
+    "job": "pusr-node",
+    "enabled_label": "status_enabled",
+    "enabled_value": "true",
+    "name_label": "status_name",
+    "cluster_label": "cluster"
+  },
+  "services": [],
+  "servers": []
+}

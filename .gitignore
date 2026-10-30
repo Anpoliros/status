@@ -3,11 +3,13 @@ data/*.db-*
 node_modules/
 dist/
 frontend/public/status.json
+frontend/public/status-pusr.json
 .vite/
 __pycache__/
 *.pyc
 
 config.json
+config-pusr.json
 
 .vscode/
 
