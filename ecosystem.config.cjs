@@ -39,7 +39,7 @@ module.exports = {
     {
       name: 'status-pusr-api',
       script: '/usr/bin/python3',
-      args: '-m backend.status_monitor.api --config config-pusr.json --host 127.0.0.1 --port 18081 --static-dir dist',
+      args: '-m backend.status_monitor.api --config config-pusr.json --host 0.0.0.0 --port 18081 --static-dir dist',
       cwd: __dirname,
       interpreter: 'none',
       autorestart: true,
