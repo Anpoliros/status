@@ -27,6 +27,21 @@
 
 `servers[].target` 可以写 `100.x.x.x:9100`，程序会自动请求 `http://100.x.x.x:9100/metrics`。`servers[].cluster` 只影响页面分组和筛选，不改变采集逻辑。
 
+也可以配置 Prometheus 作为服务器数据源。配置 `prometheus` 后，程序从 Prometheus 的 `/api/v1/targets?state=active` 自动发现目标，并使用目标标签 `status_name`、`cluster` 和 `status_enabled` 生成机器列表；此时 `servers` 应为空数组。Prometheus 的 scrape 配置示例：
+
+```yaml
+scrape_configs:
+  - job_name: pusr-node
+    static_configs:
+      - targets: ['10.1.2.142:9100']
+        labels:
+          status_enabled: 'true'
+          status_name: ali-142
+          cluster: dgroup
+```
+
+Prometheus 模式下，status 查询 `up`、CPU、内存、磁盘和网络速率，并继续把结果写入自己的 SQLite 历史库。网络指标由 Prometheus 的 `rate()` 计算，仍按页面约定保存为 bytes/minute。
+
 ## 后端运行
 
 Python 3.11+ 即可，不需要额外 pip 依赖。

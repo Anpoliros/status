@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import sqlite3
 import time
 from datetime import UTC, datetime
 from urllib.error import URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from .config import AppConfig, ServerConfig, ServiceConfig
+from .config import AppConfig, PrometheusConfig, ServerConfig, ServiceConfig
 from .db import (
     server_network_state,
     service_failure_count,
@@ -33,6 +35,12 @@ def fetch_status(url: str, timeout: float) -> int:
     request = Request(url, headers={"User-Agent": "status-monitor/1.0"})
     with urlopen(request, timeout=timeout) as response:
         return response.status
+
+
+def fetch_json(url: str, timeout: float) -> dict:
+    request = Request(url, headers={"User-Agent": "status-monitor/1.0", "Accept": "application/json"})
+    with urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 async def check_service(conn: sqlite3.Connection, config: AppConfig, service: ServiceConfig) -> None:
@@ -96,7 +104,92 @@ async def run_service_checks(conn: sqlite3.Connection, config: AppConfig) -> Non
 
 
 async def run_server_collection(conn: sqlite3.Connection, config: AppConfig) -> None:
+    if config.prometheus:
+        await collect_prometheus_servers(conn, config, config.prometheus)
+        return
     await asyncio.gather(*(collect_server(conn, config, server) for server in config.servers))
+
+
+def _prometheus_url(source: PrometheusConfig, path: str, params: dict[str, str]) -> str:
+    return f"{source.url}{path}?{urlencode(params)}"
+
+
+def discover_prometheus_servers(source: PrometheusConfig, timeout: float) -> list[ServerConfig]:
+    payload = fetch_json(_prometheus_url(source, "/api/v1/targets", {"state": "active"}), timeout)
+    servers = []
+    for target in payload.get("data", {}).get("activeTargets", []):
+        labels = target.get("labels") or {}
+        if labels.get("job") != source.job or labels.get(source.enabled_label) != source.enabled_value:
+            continue
+        instance = str(labels.get("instance") or target.get("scrapeUrl") or "")
+        if not instance:
+            continue
+        servers.append(
+            ServerConfig(
+                name=str(labels.get(source.name_label) or instance),
+                target=instance,
+                cluster=str(labels.get(source.cluster_label) or "Default"),
+            )
+        )
+    return servers
+
+
+def _query_metric(source: PrometheusConfig, expression: str, timeout: float) -> dict[str, float]:
+    payload = fetch_json(_prometheus_url(source, "/api/v1/query", {"query": expression}), timeout)
+    values = {}
+    for item in payload.get("data", {}).get("result", []):
+        instance = item.get("metric", {}).get("instance")
+        value = item.get("value", [None, None])[1]
+        if instance is None:
+            continue
+        try:
+            values[str(instance)] = float(value)
+        except (TypeError, ValueError):
+            continue
+    return values
+
+
+async def collect_prometheus_servers(
+    conn: sqlite3.Connection, config: AppConfig, source: PrometheusConfig
+) -> None:
+    try:
+        servers = await asyncio.to_thread(discover_prometheus_servers, source, config.request_timeout_seconds)
+        selector = f'job="{source.job}",{source.enabled_label}="{source.enabled_value}"'
+        queries = {
+            "up": f'up{{{selector}}}',
+            "cpu_usage": f'100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{{{selector},mode="idle"}}[5m])))',
+            "memory_usage": f'100 * (1 - node_memory_MemAvailable_bytes{{{selector}}} / node_memory_MemTotal_bytes{{{selector}}})',
+            "disk_usage": f'100 * (1 - sum by(instance) (node_filesystem_avail_bytes{{{selector}}}) / sum by(instance) (node_filesystem_size_bytes{{{selector}}}))',
+            "network_in": f'sum by(instance) (rate(node_network_receive_bytes_total{{{selector}}}[1m]))',
+            "network_out": f'sum by(instance) (rate(node_network_transmit_bytes_total{{{selector}}}[1m]))',
+        }
+        metrics = {
+            name: await asyncio.to_thread(_query_metric, source, expression, config.request_timeout_seconds)
+            for name, expression in queries.items()
+        }
+    except (TimeoutError, URLError, OSError, ValueError, json.JSONDecodeError):
+        servers = []
+        metrics = {}
+
+    timestamp = now_iso()
+    for server in servers:
+        server_id = upsert_server(conn, server)
+        up = metrics.get("up", {}).get(server.target)
+        if up != 1:
+            values = {key: None for key in ("cpu_usage", "memory_usage", "disk_usage", "network_in", "network_out")}
+        else:
+            values = {key: metrics.get(key, {}).get(server.target) for key in ("cpu_usage", "memory_usage", "disk_usage")}
+            values["network_in"] = (metrics.get("network_in", {}).get(server.target) or 0.0) * 60
+            values["network_out"] = (metrics.get("network_out", {}).get(server.target) or 0.0) * 60
+        conn.execute(
+            """
+            INSERT INTO server_metrics(
+              server_id, timestamp, cpu_usage, memory_usage, disk_usage, network_in, network_out
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (server_id, timestamp, values["cpu_usage"], values["memory_usage"], values["disk_usage"], values["network_in"], values["network_out"]),
+        )
+    conn.commit()
 
 
 def network_per_minute(

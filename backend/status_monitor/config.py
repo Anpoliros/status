@@ -21,6 +21,16 @@ class ServerConfig:
 
 
 @dataclass(frozen=True)
+class PrometheusConfig:
+    url: str
+    job: str
+    enabled_label: str = "status_enabled"
+    enabled_value: str = "true"
+    name_label: str = "status_name"
+    cluster_label: str = "cluster"
+
+
+@dataclass(frozen=True)
 class AppConfig:
     database: Path
     status_json: Path
@@ -31,6 +41,7 @@ class AppConfig:
     history_hours: int
     services: list[ServiceConfig]
     servers: list[ServerConfig]
+    prometheus: PrometheusConfig | None = None
 
 
 def _service_from_item(item: str | dict[str, Any]) -> ServiceConfig:
@@ -66,6 +77,18 @@ def load_config(path: str | Path) -> AppConfig:
     if not status_json.is_absolute():
         status_json = base / status_json
 
+    prometheus_raw = raw.get("prometheus")
+    prometheus = None
+    if prometheus_raw:
+        prometheus = PrometheusConfig(
+            url=str(prometheus_raw["url"]).rstrip("/"),
+            job=str(prometheus_raw["job"]),
+            enabled_label=str(prometheus_raw.get("enabled_label") or "status_enabled"),
+            enabled_value=str(prometheus_raw.get("enabled_value") or "true"),
+            name_label=str(prometheus_raw.get("name_label") or "status_name"),
+            cluster_label=str(prometheus_raw.get("cluster_label") or "cluster"),
+        )
+
     return AppConfig(
         database=database,
         status_json=status_json,
@@ -76,4 +99,5 @@ def load_config(path: str | Path) -> AppConfig:
         history_hours=int(raw.get("history_hours", 24 * 60)),
         services=[_service_from_item(item) for item in raw.get("services", [])],
         servers=[_server_from_item(item) for item in raw.get("servers", [])],
+        prometheus=prometheus,
     )

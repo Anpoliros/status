@@ -6,17 +6,19 @@
   "failure_threshold": 3,
   "request_timeout_seconds": 8,
   "history_hours": 1440,
+  "prometheus": {
+    "url": "http://bastion:9090",
+    "job": "pusr-node",
+    "enabled_label": "status_enabled",
+    "enabled_value": "true",
+    "name_label": "status_name",
+    "cluster_label": "cluster"
+  },
   "services": [
     {
       "name": "Example Site",
       "url": "https://example.com"
     }
   ],
-  "servers": [
-    {
-      "name": "App Server",
-      "target": "100.64.0.10:9100",
-      "cluster": "Default"
-    }
-  ]
+  "servers": []
 }
