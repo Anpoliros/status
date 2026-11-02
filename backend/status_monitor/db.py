@@ -1,3 +1,4 @@
+"""SQLite storage and synchronization of configured monitoring resources."""
 from __future__ import annotations
 
 import sqlite3
@@ -94,7 +95,10 @@ def sync_config(conn: sqlite3.Connection, config: AppConfig) -> None:
     else:
         conn.execute("DELETE FROM services")
 
-    if server_targets:
+    # Discovered machines are maintained by their data source, not the static list.
+    if config.sources or config.prometheus:
+        pass
+    elif server_targets:
         placeholders = ",".join("?" for _ in server_targets)
         conn.execute(f"DELETE FROM servers WHERE ip NOT IN ({placeholders})", server_targets)
     else:

@@ -17,3 +17,11 @@ backend/status_monitor/__pycache__/
 
 node_exporter*
 node_exporter*/
+
+# Instance configuration, secrets, and private snapshots.
+.venv/
+configs/.env
+configs/general.json
+configs/resources/*.json
+configs-pusr/
+data/

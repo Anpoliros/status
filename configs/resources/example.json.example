@@ -1,0 +1,11 @@
+{
+  "services": [
+    {
+      "id": "example",
+      "name": "Example",
+      "url": "https://example.com",
+      "cluster": "Default"
+    }
+  ],
+  "servers": []
+}

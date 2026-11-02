@@ -1,33 +1,41 @@
+"""Load repository-relative configuration, resource groups, and instance secrets."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass(frozen=True)
 class ServiceConfig:
     name: str
     url: str
+    cluster: str = 'Default'
+    id: str = ''
 
 
 @dataclass(frozen=True)
 class ServerConfig:
     name: str
     target: str
-    cluster: str = "Default"
+    cluster: str = 'Default'
+    id: str = ''
 
 
 @dataclass(frozen=True)
 class PrometheusConfig:
     url: str
     job: str
-    enabled_label: str = "status_enabled"
-    enabled_value: str = "true"
-    name_label: str = "status_name"
-    cluster_label: str = "cluster"
+    enabled_label: str = 'status_enabled'
+    enabled_value: str = 'true'
+    name_label: str = 'status_name'
+    cluster_label: str = 'cluster'
 
 
 @dataclass(frozen=True)
@@ -42,62 +50,97 @@ class AppConfig:
     services: list[ServiceConfig]
     servers: list[ServerConfig]
     prometheus: PrometheusConfig | None = None
+    sources: list[PrometheusConfig] = field(default_factory=list)
+    auth: dict = field(default_factory=dict)
+    refresh: dict = field(default_factory=dict)
+
+    @property
+    def state_database(self) -> Path:
+        return self.database.with_suffix('.control.db')
 
 
-def _service_from_item(item: str | dict[str, Any]) -> ServiceConfig:
-    if isinstance(item, str):
-        url = item if item.startswith(("http://", "https://")) else f"https://{item}"
-        return ServiceConfig(name=item.replace("https://", "").replace("http://", ""), url=url)
-    name = str(item.get("name") or item.get("url"))
-    url = str(item["url"])
-    if not url.startswith(("http://", "https://")):
-        url = f"https://{url}"
-    return ServiceConfig(name=name, url=url)
+def repository_path(value: str | Path) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
 
 
-def _server_from_item(item: str | dict[str, Any]) -> ServerConfig:
-    if isinstance(item, str):
-        return ServerConfig(name=item, target=item)
-    return ServerConfig(
-        name=str(item.get("name") or item["target"]),
-        target=str(item["target"]),
-        cluster=str(item.get("cluster") or "Default"),
-    )
+def _expand(value: Any, environment: dict) -> Any:
+    if isinstance(value, str):
+        def replace(match):
+            key = match[1]
+            if key not in environment:
+                raise ValueError(f'Missing environment variable: {key}')
+            return environment[key]
+        return re.sub(r'\$\{([A-Za-z_][A-Za-z0-9_]*)\}', replace, value)
+    if isinstance(value, list):
+        return [_expand(item, environment) for item in value]
+    if isinstance(value, dict):
+        return {key: _expand(item, environment) for key, item in value.items()}
+    return value
 
 
-def load_config(path: str | Path) -> AppConfig:
-    config_path = Path(path)
-    raw = json.loads(config_path.read_text(encoding="utf-8"))
-    base = config_path.parent
+def _identity(kind: str, endpoint: str) -> str:
+    return f'{kind}-{hashlib.sha256(endpoint.encode()).hexdigest()[:16]}'
 
-    database = Path(os.getenv("STATUS_DATABASE", raw.get("database", "data/status.db")))
-    status_json = Path(os.getenv("STATUS_JSON", raw.get("status_json", "frontend/public/status.json")))
-    if not database.is_absolute():
-        database = base / database
-    if not status_json.is_absolute():
-        status_json = base / status_json
 
-    prometheus_raw = raw.get("prometheus")
-    prometheus = None
-    if prometheus_raw:
-        prometheus = PrometheusConfig(
-            url=str(prometheus_raw["url"]).rstrip("/"),
-            job=str(prometheus_raw["job"]),
-            enabled_label=str(prometheus_raw.get("enabled_label") or "status_enabled"),
-            enabled_value=str(prometheus_raw.get("enabled_value") or "true"),
-            name_label=str(prometheus_raw.get("name_label") or "status_name"),
-            cluster_label=str(prometheus_raw.get("cluster_label") or "cluster"),
-        )
-
+def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
+    from dotenv import dotenv_values
+    config_path = repository_path(path)
+    environment = {**dotenv_values(config_path.parent / '.env', interpolate=False), **os.environ}
+    raw = _expand(json.loads(config_path.read_text()), environment)
+    resources = [raw]
+    # Legacy files remain readable for an orderly migration.
+    if 'resource_dirs' in raw or config_path.name == 'general.json':
+        for directory in raw.get('resource_dirs', ['configs/resources']):
+            directory = repository_path(directory)
+            if not directory.is_dir():
+                raise ValueError(f'Resource directory does not exist: {directory}')
+            for resource_path in sorted(directory.glob('*.json')):
+                resources.append(_expand(json.loads(resource_path.read_text()), environment))
+    services, servers, sources = [], [], []
+    ids, endpoints = set(), set()
+    for resource in resources:
+        for kind, target_list, endpoint_key in [('service', services, 'url'), ('server', servers, 'target')]:
+            for item in resource.get('services' if kind == 'service' else 'servers', []):
+                if isinstance(item, str):
+                    item = {'name': item, endpoint_key: item}
+                endpoint = str(item[endpoint_key])
+                if kind == 'service' and not endpoint.startswith(('http://', 'https://')):
+                    endpoint = 'https://' + endpoint
+                identity = str(item.get('id') or _identity(kind, endpoint))
+                if identity in ids or (kind, endpoint) in endpoints:
+                    raise ValueError(f'Duplicate resource: {identity}')
+                ids.add(identity)
+                endpoints.add((kind, endpoint))
+                target_list.append((ServiceConfig if kind == 'service' else ServerConfig)(
+                    str(item.get('name') or endpoint), endpoint, str(item.get('cluster') or 'Default'), identity))
+        definitions = resource.get('prometheus', [])
+        if isinstance(definitions, dict):
+            definitions = [definitions]
+        sources.extend(PrometheusConfig(**item) for item in definitions)
+    refresh = {'minimum_seconds': 10, 'idle_seconds': 300, 'lease_seconds': 75,
+               'presets': [10, 20, 60], **raw.get('refresh', {})}
+    for key in ('minimum_seconds', 'idle_seconds', 'lease_seconds'):
+        if not isinstance(refresh[key], int) or refresh[key] <= 0:
+            raise ValueError(f'Invalid refresh.{key}')
+    if refresh['idle_seconds'] < refresh['minimum_seconds'] or refresh['lease_seconds'] < 45:
+        raise ValueError('Idle interval must respect minimum; lease must be at least 45 seconds')
+    if len(refresh['presets']) != 3 or any(not isinstance(x, int) or x <= 0 or x > 86400 for x in refresh['presets']):
+        raise ValueError('Exactly three refresh presets between 1 and 86400 are required')
+    auth = raw.get('auth', {})
+    oidc = auth.get('shizunet', {})
+    if oidc.get('enabled') and any(not oidc.get(k) for k in ('issuer', 'client_id', 'client_secret', 'base_url')):
+        raise ValueError('Enabled Shizunet requires issuer, client_id, client_secret and base_url')
+    pseudo = auth.get('pseudo_user', {})
+    if pseudo.get('enabled') and (not pseudo.get('username') or not pseudo.get('password_hash')):
+        raise ValueError('Enabled pseudo user requires username and password_hash')
+    values = {key: int(raw.get(key, default)) for key, default in {
+        'service_interval_seconds': 600, 'server_interval_seconds': 60,
+        'failure_threshold': 3, 'history_hours': 1440}.items()}
+    if any(v <= 0 for v in values.values()) or float(raw.get('request_timeout_seconds', 8)) <= 0:
+        raise ValueError('Intervals, thresholds and timeouts must be positive')
     return AppConfig(
-        database=database,
-        status_json=status_json,
-        service_interval_seconds=int(raw.get("service_interval_seconds", 600)),
-        server_interval_seconds=int(raw.get("server_interval_seconds", 60)),
-        failure_threshold=int(raw.get("failure_threshold", 3)),
-        request_timeout_seconds=float(raw.get("request_timeout_seconds", 8)),
-        history_hours=int(raw.get("history_hours", 24 * 60)),
-        services=[_service_from_item(item) for item in raw.get("services", [])],
-        servers=[_server_from_item(item) for item in raw.get("servers", [])],
-        prometheus=prometheus,
-    )
+        database=repository_path(environment.get('STATUS_DATABASE') or raw.get('database', 'data/status.db')),
+        status_json=repository_path(environment.get('STATUS_JSON') or raw.get('status_json', 'data/snapshots/current.json')),
+        request_timeout_seconds=float(raw.get('request_timeout_seconds', 8)),
+        services=services, servers=servers, sources=sources, auth=auth, refresh=refresh, **values)

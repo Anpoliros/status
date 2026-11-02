@@ -1,3 +1,4 @@
+"""Collect configured services, static machines and Prometheus resource groups."""
 from __future__ import annotations
 
 import asyncio
@@ -104,9 +105,9 @@ async def run_service_checks(conn: sqlite3.Connection, config: AppConfig) -> Non
 
 
 async def run_server_collection(conn: sqlite3.Connection, config: AppConfig) -> None:
-    if config.prometheus:
-        await collect_prometheus_servers(conn, config, config.prometheus)
-        return
+    sources = config.sources or ([config.prometheus] if config.prometheus else [])
+    for source in sources:
+        await collect_prometheus_servers(conn, config, source)
     await asyncio.gather(*(collect_server(conn, config, server) for server in config.servers))
 
 

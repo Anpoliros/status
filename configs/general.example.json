@@ -1,0 +1,33 @@
+{
+  "database": "data/status.db",
+  "status_json": "data/snapshots/current.json",
+  "service_interval_seconds": 600,
+  "server_interval_seconds": 60,
+  "failure_threshold": 3,
+  "request_timeout_seconds": 8,
+  "history_hours": 1440,
+  "resource_dirs": [
+    "configs/resources"
+  ],
+  "refresh": {
+    "minimum_seconds": 10,
+    "idle_seconds": 300,
+    "lease_seconds": 75,
+    "presets": [
+      10,
+      20,
+      60
+    ]
+  },
+  "auth": {
+    "shizunet": {
+      "enabled": false,
+      "issuer": "https://auth.example.com",
+      "client_id": "status",
+      "base_url": "https://status.example.com"
+    },
+    "pseudo_user": {
+      "enabled": false
+    }
+  }
+}

@@ -1,2 +1,4 @@
-# Runtime uses only the Python standard library.
-# Python 3.11+ is recommended.
+# Authentication and instance-local environment configuration.
+python-dotenv>=1.0,<2
+requests>=2.32,<3
+PyJWT[crypto]>=2.10,<3
