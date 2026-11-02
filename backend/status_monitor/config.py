@@ -70,7 +70,7 @@ def _expand(value: Any, environment: dict) -> Any:
     if isinstance(value, str):
         def replace(match):
             key = match[1]
-            if key not in environment:
+            if key not in environment or environment[key] is None:
                 raise ValueError(f'Missing environment variable: {key}')
             return environment[key]
         return re.sub(r'\$\{([A-Za-z_][A-Za-z0-9_]*)\}', replace, value)
@@ -122,14 +122,29 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
         sources.extend(PrometheusConfig(**item) for item in definitions)
     refresh = {'minimum_seconds': 10, 'idle_seconds': 300, 'lease_seconds': 75,
                'presets': [10, 20, 60], **raw.get('refresh', {})}
+    def integer(value, name):
+        if isinstance(value, bool) or not re.fullmatch(r'[0-9]+', str(value)):
+            raise ValueError(f'Invalid integer: {name}')
+        return int(value)
+
     for key in ('minimum_seconds', 'idle_seconds', 'lease_seconds'):
-        if not isinstance(refresh[key], int) or refresh[key] <= 0:
+        refresh[key] = integer(refresh[key], f'refresh.{key}')
+        if refresh[key] <= 0:
             raise ValueError(f'Invalid refresh.{key}')
     if refresh['idle_seconds'] < refresh['minimum_seconds'] or refresh['lease_seconds'] < 45:
         raise ValueError('Idle interval must respect minimum; lease must be at least 45 seconds')
-    if len(refresh['presets']) != 3 or any(not isinstance(x, int) or x <= 0 or x > 86400 for x in refresh['presets']):
+    refresh['presets'] = [integer(value, 'refresh.presets') for value in refresh['presets']]
+    if len(refresh['presets']) != 3 or any(not 0 < value <= 86400 for value in refresh['presets']):
         raise ValueError('Exactly three refresh presets between 1 and 86400 are required')
     auth = raw.get('auth', {})
+    for section in ('shizunet', 'pseudo_user'):
+        options = auth.setdefault(section, {})
+        enabled = options.get('enabled', False)
+        if isinstance(enabled, str) and enabled.lower() in ('true', 'false'):
+            enabled = enabled.lower() == 'true'
+        if not isinstance(enabled, bool):
+            raise ValueError(f'auth.{section}.enabled must be true or false')
+        options['enabled'] = enabled
     snapshot_path = repository_path(environment.get('STATUS_JSON') or raw.get('status_json', 'data/snapshots/current.json')).resolve()
     if any(public == snapshot_path or public in snapshot_path.parents for public in (ROOT/'dist', ROOT/'public', ROOT/'frontend/public')):
         raise ValueError('Snapshots must be outside public frontend directories')

@@ -38,3 +38,13 @@ class ConfigTests(unittest.TestCase):
             path.write_text('{"auth":{"shizunet":{"enabled":true}}}')
             with self.assertRaisesRegex(ValueError, 'Shizunet requires'):
                 load_config(path)
+
+    def test_environment_numbers_and_disabled_auth_are_typed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            (base/'.env').write_text('MINIMUM=15\nAUTH_ENABLED=false\n')
+            path = base/'custom.json'
+            path.write_text(json.dumps({'refresh':{'minimum_seconds':'${MINIMUM}'},'auth':{'shizunet':{'enabled':'${AUTH_ENABLED}'}}}))
+            config = load_config(path)
+            self.assertEqual(config.refresh['minimum_seconds'],15)
+            self.assertIs(config.auth['shizunet']['enabled'],False)
