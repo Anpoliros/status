@@ -1,6 +1,7 @@
 /** @file useDashboard.js @description Session-aware snapshot polling and expiring page leases. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { post, request } from './api.js';
+import { createPageIdentity } from './page-identity.js';
 
 export function useDashboard({ resourceView, mode, range, seconds, automatic }) {
   const [session, setSession] = useState(null);
@@ -10,7 +11,8 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [control, setControl] = useState(null);
-  const page = useRef(window.crypto.randomUUID());
+  const page = useRef(null);
+  if (page.current === null) page.current = createPageIdentity();
   const requestId = useRef(0);
   const pendingUntil = useRef(0);
   const pendingVersion = useRef(0);

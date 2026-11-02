@@ -70,3 +70,21 @@ class ApiTests(unittest.TestCase):
     def test_mutations_require_same_origin(self):
         response = self.client.post(self.url+'/auth/local',json={'username':'recovery','password':'secret'},headers={'Origin':'https://other.example'})
         self.assertEqual(response.status_code,403)
+
+
+    def test_local_only_instance_requires_login_without_shizunet(self):
+        self.server.RequestHandlerClass.auth = Auth(replace(self.config,auth={
+            'shizunet':{'enabled':False},
+            'pseudo_user':self.config.auth['pseudo_user']}))
+        session = self.client.get(self.url+'/api/session').json()
+        self.assertFalse(session['shizunet'])
+        self.assertTrue(session['pseudo_user'])
+        self.assertFalse(session['full_access'])
+        self.assertEqual(self.client.get(self.url+'/status').status_code,401)
+        self.assertEqual(self.post('/api/control',{'page':'b'*20,'action':'connect','seconds':60}).status_code,401)
+        self.assertEqual(self.client.get(self.url+'/history/services').status_code,200)
+        self.assertEqual(self.post('/auth/local',{'username':'recovery','password':'secret'}).status_code,200)
+        self.assertEqual(self.client.get(self.url+'/status').status_code,200)
+        self.assertEqual(self.post('/api/control',{'page':'b'*20,'action':'connect','seconds':60}).status_code,200)
+        self.assertEqual(self.post('/auth/logout',{}).status_code,200)
+        self.assertEqual(self.client.get(self.url+'/status').status_code,401)

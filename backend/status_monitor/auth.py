@@ -51,6 +51,8 @@ class Auth:
         self.oidc = config.auth.get('shizunet', {})
         self.pseudo = config.auth.get('pseudo_user', {})
         self.enabled = bool(self.oidc.get('enabled'))
+        # Local-only instances still protect resources when Shizunet is disabled.
+        self.required = self.enabled or bool(self.pseudo.get('enabled'))
         base = self.oidc.get('base_url') or config.auth.get('base_url', '')
         self.secure = base.startswith('https://')
         self.cookie_name = 'status_' + digest(str(config.database))[:10]

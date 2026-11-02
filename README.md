@@ -75,7 +75,7 @@ resource 示例：
 
 ## 账号与公开访问
 
-Shizunet 关闭时完整页面可用；启用时匿名用户仅可读取 Services History。机器、服务当前状态、机器历史及 `/check` 均要求 status 登录。已有 status 会话不依赖身份提供方在线；Shizunet 故障不会自动关闭鉴权。
+Shizunet 或本地备用账号任一启用时，匿名用户仅可读取 Services History；两种登录均关闭时完整页面可用。关闭 Shizunet、仅启用 pseudo user 即为本地账号登录模式。机器、服务当前状态、机器历史及 `/check` 均要求 status 登录。已有 status 会话不依赖身份提供方在线；Shizunet 故障不会自动关闭鉴权。
 
 启用 Shizunet：
 

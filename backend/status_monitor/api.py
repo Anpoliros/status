@@ -95,7 +95,7 @@ class StatusHandler(BaseHTTPRequestHandler):
         if not self.limiter.allow(('user',identity),240):
             self._json({'error':'Too many requests'},429,{'Retry-After':'60'})
             return
-        full = not self.auth.enabled or user is not None
+        full = not self.auth.required or user is not None
         if path == '/api/session':
             self._json({'user':user,'full_access':full,'shizunet':self.auth.enabled,
                         'pseudo_user':bool(self.auth.pseudo.get('enabled')), 'refresh':self.config.refresh})
@@ -156,7 +156,7 @@ class StatusHandler(BaseHTTPRequestHandler):
             elif path == '/auth/logout':
                 self._json({'ok':True},headers={'Set-Cookie':self.auth.logout(self.headers)})
             elif path == '/api/control':
-                if self.auth.enabled and not user:
+                if self.auth.required and not user:
                     self._json({'error':'Login required'},401)
                     return
                 from .scheduler import control_request
