@@ -6,9 +6,9 @@ module.exports = {
   apps: [
     {
       name: 'status-worker',
-      // Use the system interpreter instead of inheriting another project's virtualenv.
-      script: '/usr/bin/python3',
-      args: '-m backend.status_monitor.worker --config config.json',
+      // Use this repository's explicit runtime, independent of the parent shell.
+      script: `${__dirname}/.venv/bin/python`,
+      args: '-m backend.status_monitor.worker --config configs/general.json',
       cwd: __dirname,
       interpreter: 'none',
       autorestart: true,
@@ -17,9 +17,9 @@ module.exports = {
     },
     {
       name: 'status-api',
-      // Use the system interpreter instead of inheriting another project's virtualenv.
-      script: '/usr/bin/python3',
-      args: '-m backend.status_monitor.api --config config.json --host 127.0.0.1 --port 18080 --static-dir dist',
+      // Use this repository's explicit runtime, independent of the parent shell.
+      script: `${__dirname}/.venv/bin/python`,
+      args: '-m backend.status_monitor.api --config configs/general.json --host 127.0.0.1 --port 18080 --static-dir dist',
       cwd: __dirname,
       interpreter: 'none',
       autorestart: true,
@@ -28,8 +28,8 @@ module.exports = {
     },
     {
       name: 'status-pusr-worker',
-      script: '/usr/bin/python3',
-      args: '-m backend.status_monitor.worker --config config-pusr.json',
+      script: `${__dirname}/.venv/bin/python`,
+      args: '-m backend.status_monitor.worker --config configs-pusr/general.json',
       cwd: __dirname,
       interpreter: 'none',
       autorestart: true,
@@ -38,8 +38,8 @@ module.exports = {
     },
     {
       name: 'status-pusr-api',
-      script: '/usr/bin/python3',
-      args: '-m backend.status_monitor.api --config config-pusr.json --host 0.0.0.0 --port 18081 --static-dir dist',
+      script: `${__dirname}/.venv/bin/python`,
+      args: '-m backend.status_monitor.api --config configs-pusr/general.json --host 0.0.0.0 --port 18081 --static-dir dist',
       cwd: __dirname,
       interpreter: 'none',
       autorestart: true,

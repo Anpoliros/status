@@ -1,153 +1,165 @@
 # Lightweight Status Monitor
 
-一个小规模内网状态页：Python worker 采集 HTTP 服务和 Node Exporter 指标，SQLite 保存 60 天历史，React 展示 Machines、Services 和 History。
+Python worker 采集 HTTP 服务、Node Exporter 与 Prometheus 指标，SQLite 保存历史；React 展示当前状态和预聚合历史。API 只读取私有快照，不在浏览器读取数据时查询完整历史。
 
-## 目录
+## 配置与目录
 
-- `backend/status_monitor/worker.py`: 定时采集，写入 SQLite，并生成 `frontend/public/status.json`
-- `backend/status_monitor/api.py`: 只读 JSON API
-- `frontend/src`: React status page
-- `config.json`: 监控目标和采集参数
-- `data/status.db`: 默认 SQLite 数据库位置
+```text
+configs/
+    general.json
+    resources/
+        default.json
+    .env
+configs-pusr/            # 独立实例的私有目录，不跟踪
+    general.json
+    resources/
+    .env
+data/                    # 数据库、会话、调度状态和私有快照，不跟踪
+```
 
-## 配置
+首次安装时复制 `configs/general.example.json` 为 `configs/general.json`，复制 `configs/resources/example.json.example` 为 `configs/resources/default.json`。真实配置和秘密不提交到 Git。
 
-编辑 `config.json`：
+`general.json` 的 `resource_dirs` 为目录数组，默认 `["configs/resources"]`，支持绝对路径；所有相对路径统一相对 status 仓库根目录。目录内加载 `.json` 文件，文件只是组织方式，集群归属由资源的 `cluster` 字段或 Prometheus 标签决定。同一资源不能在多个文件重复定义。
+
+```json
+{
+  "database": "data/status.db",
+  "status_json": "data/snapshots/current.json",
+  "resource_dirs": ["configs/resources", "/srv/shared/status-resources"],
+  "service_interval_seconds": 600,
+  "failure_threshold": 3,
+  "request_timeout_seconds": 8,
+  "history_hours": 1440,
+  "refresh": {
+    "minimum_seconds": 10,
+    "idle_seconds": 300,
+    "lease_seconds": 75,
+    "presets": [10, 20, 60]
+  },
+  "auth": {
+    "shizunet": { "enabled": false },
+    "pseudo_user": { "enabled": false }
+  }
+}
+```
+
+resource 示例：
 
 ```json
 {
   "services": [
-    { "name": "Site 1", "url": "https://site1.com" }
+    { "id": "home", "name": "Home", "url": "https://example.com", "cluster": "Public", "order": 0 }
   ],
   "servers": [
-    { "name": "App Server", "target": "100.64.0.10:9100", "cluster": "Default" }
+    { "id": "app", "name": "App", "target": "100.64.0.10:9100", "cluster": "Internal", "order": 0 }
   ]
 }
 ```
 
-`servers[].target` 可以写 `100.x.x.x:9100`，程序会自动请求 `http://100.x.x.x:9100/metrics`。`servers[].cluster` 只影响页面分组和筛选，不改变采集逻辑。
+`id` 建议显式指定，改名或移动文件不会改变身份。省略时从端点生成稳定 ID。`order` 决定配置排序，同值保持加载顺序。机器 target 可以直接写 `100.x.x.x:9100`。可在资源文件设置 `prometheus` 对象或对象数组，与静态机器并存：
 
-也可以配置 Prometheus 作为服务器数据源。配置 `prometheus` 后，程序从 Prometheus 的 `/api/v1/targets?state=active` 自动发现目标，并使用目标标签 `status_name`、`cluster` 和 `status_enabled` 生成机器列表；此时 `servers` 应为空数组。Prometheus 的 scrape 配置示例：
-
-```yaml
-scrape_configs:
-  - job_name: pusr-node
-    static_configs:
-      - targets: ['10.1.2.142:9100']
-        labels:
-          status_enabled: 'true'
-          status_name: ali-142
-          cluster: dgroup
+```json
+{
+  "prometheus": {
+    "url": "http://prometheus:9090",
+    "job": "nodes",
+    "enabled_label": "status_enabled",
+    "enabled_value": "true",
+    "name_label": "status_name",
+    "cluster_label": "cluster"
+  }
+}
 ```
 
-Prometheus 模式下，status 查询 `up`、CPU、内存、磁盘和网络速率，并继续把结果写入自己的 SQLite 历史库。网络指标由 Prometheus 的 `rate()` 计算，仍按页面约定保存为 bytes/minute。
+每份 general 加载其同目录的 `.env`，进程环境变量优先。general 和 resource 字符串均支持 `${VARIABLE}`，缺失变量会阻止启动；不会执行 shell 表达式，也不会把一个实例的环境注入另一个实例。`STATUS_DATABASE`、`STATUS_JSON` 可覆盖对应路径。配置在进程启动时读取，修改后重启对应 worker 和 API。
 
-## 后端运行
+## 账号与公开访问
 
-Python 3.11+ 即可，不需要额外 pip 依赖。
+Shizunet 关闭时完整页面可用；启用时匿名用户仅可读取 Services History。机器、服务当前状态、机器历史及 `/check` 均要求 status 登录。已有 status 会话不依赖身份提供方在线；Shizunet 故障不会自动关闭鉴权。
 
-```bash
-python3 -m backend.status_monitor.worker --config config.json --once
-python3 -m backend.status_monitor.worker --config config.json
-python3 -m backend.status_monitor.api --config config.json --host 127.0.0.1 --port 8080
+启用 Shizunet：
+
+```json
+{
+  "auth": {
+    "shizunet": {
+      "enabled": true,
+      "issuer": "https://auth.example.com",
+      "client_id": "status",
+      "client_secret": "${STATUS_OIDC_SECRET}",
+      "base_url": "https://status.example.com"
+    },
+    "pseudo_user": {
+      "enabled": true,
+      "username": "${STATUS_PSEUDO_USERNAME}",
+      "password_hash": "${STATUS_PSEUDO_PASSWORD_HASH}"
+    }
+  }
+}
 ```
 
-API：
+在 `configs/.env` 设置上述变量并限制文件权限为 `600`。Shizunet 私有环境中设置同一密钥 `OIDC_STATUS_SECRET` 和 `STATUS_URL`，重启 Shizunet；回调为 `${STATUS_URL}/auth/callback`。status 使用独立 OIDC 客户端、PKCE、nonce 和服务端会话，不保存 Shizunet 密码。
 
-- `GET /status`
-- `GET /history/services?hours=24`
-- `GET /history/servers?hours=24`
-
-## 生产运行（PM2）
-
-项目使用 PM2 运行采集 worker 和 API，不需要 Docker：
+pseudo user 为独立本地备用身份，不走 Shizunet。生成密码哈希：
 
 ```bash
+.venv/bin/python -m backend.status_monitor.auth
+```
+
+将输出填入 `STATUS_PSEUDO_PASSWORD_HASH`。生产启用 HTTPS 时 Cookie 自动使用 Secure。若只启用本地账号，可设置 `auth.base_url` 明确部署地址。Account 提供两种登录入口；当前不做集群授权和跨设备设置同步。
+
+## 刷新与快照
+
+- 顶部保留三个周期按钮（默认 10/20/60 秒）及刷新按钮。Control 修改三个按钮的数值，设置保存在本机浏览器；general 的 presets 提供初始值。
+- 活跃页面每 20 秒续租。机器采集周期取所有活跃页面请求周期的最小值，并受服务器 `minimum_seconds` 下限约束；没有活跃页面时使用 `idle_seconds`。
+- 活跃页面可以请求比静息周期更长的间隔。低于下限时客户端提示下限，不提示其他页面造成的更高采集频率。
+- 新连接和手动刷新请求尽早采集，多请求合并；采集不重叠，两次开始时间至少相隔最小间隔，失败也占用这次机会。
+- 页面隐藏后停止续租，异常断开通过租约到期回归静息周期；心跳与数据读取周期独立。关闭自动刷新会释放租约，仍可手动刷新。
+- 服务探测保留独立周期，手动刷新 Services 可以请求提前探测，同样受最小间隔约束。
+- GET `/status?probe=...` 不再触发采集。控制接口为同源 POST，受权限、速率和页面数量限制。
+
+worker 采集完成后增量更新按小时/天聚合的历史，并原子生成私有快照。API 在文件版本变化时重新加载，不反复执行历史查询。当前状态、48 小时历史和 60 天历史分别传输；已有快照在进程重启后可直接使用。快照必须位于静态目录之外，旧 `/status.json` 降级路径不再提供。
+
+首次加载显示加载状态，后台更新保留现有数据，失败保留旧数据并提示。服务历史全成功为绿色、全失败为红色、混合为黄色、没有数据为灰色。历史展示为 48 小时/60 天；当前不会自动删除原始采集数据，聚合窗口保留 61 天。
+
+Filter 控制集群及机器可见性，Display 控制排序、列表/网格、宽度与每行卡片上限。样式沿用 status 的圆角、透明背景和分段按钮。网络指标保存为 bytes/minute、页面换算为 bytes/s；Node Exporter counter 需要两次样本才能计算速率，Prometheus 使用 `rate()`。
+
+## 运行与部署
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
 npm install
 npm run build
-pm2 start ecosystem.config.cjs
+pm2 startOrRestart ecosystem.config.cjs --update-env
 pm2 save
 ```
 
-API 默认监听 `127.0.0.1:18080`，由现有反向代理转发，静态文件由 API 直接提供。修改前端后重新执行 `npm run build && pm2 restart status-api`；修改监控配置后执行 `pm2 restart status-worker`。
+PM2 使用本仓库 `.venv/bin/python`，避免继承其他项目环境：
 
-## 前端运行
+- `status-worker` / `status-api`：`configs/general.json`，API `127.0.0.1:18080`。
+- `status-pusr-worker` / `status-pusr-api`：`configs-pusr/general.json`，API `0.0.0.0:18081`，保留现有内网访问方式。
 
-```bash
-npm install
-npm run dev
-```
+两个实例分别指定数据库和快照目录；会话与控制数据库从业务数据库路径派生，相互隔离。每个实例只允许一个 worker，文件锁防止重复启动。
 
-如果 API 与 Vite 不在同一地址，设置：
+本地运行：
 
 ```bash
-VITE_STATUS_API=http://127.0.0.1:8080 npm run dev
+.venv/bin/python -m backend.status_monitor.worker --config configs/general.json
+.venv/bin/python -m backend.status_monitor.api --config configs/general.json --static-dir dist
 ```
 
-Machines 页面按 10/20/60 秒刷新，并在每次刷新时触发服务器指标采集；Services 页面沿用 10 分钟采集周期。API 不可用时，前端会读取 worker 生成的 `/status.json`。
+API：`GET /api/session`、`GET /status`、`GET /history/services?range=60d`、`GET /history/servers?range=48h`、`GET /check`、`GET /healthz`。历史仅支持固定窗口；匿名可读服务历史。`/healthz` 检查 API 和初始快照可用性，采集是否持续应同时观察快照时间及 worker 日志。
 
-## 网络流量说明
+开发前端使用 `npm run dev`，Vite 将 API、认证及历史路径代理到本机 `18080`，保持同源 Cookie 和控制请求。
 
-Node Exporter 原生的 `node_network_receive_bytes_total` 和 `node_network_transmit_bytes_total` 是从网卡启动以来累计增长的 counter，不是最近一分钟流量。
-
-本项目会保存上一轮采集到的 counter，用当前 counter 减上一轮 counter，再按实际间隔归一成 `bytes/min`。第一次采集没有上一轮数据，所以网络流量会显示为空；第二次采集后开始显示最近一分钟估算流量。
-
-## systemd 示例
-
-`/etc/systemd/system/status-worker.service`：
-
-```ini
-[Unit]
-Description=Lightweight Status Monitor Worker
-After=network-online.target
-
-[Service]
-WorkingDirectory=/home/anpoliros/status
-ExecStart=/usr/bin/python3 -m backend.status_monitor.worker --config config.json
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-`/etc/systemd/system/status-api.service`：
-
-```ini
-[Unit]
-Description=Lightweight Status Monitor API
-After=network-online.target
-
-[Service]
-WorkingDirectory=/home/anpoliros/status
-ExecStart=/usr/bin/python3 -m backend.status_monitor.api --config config.json --host 0.0.0.0 --port 8080
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## 数据保留
-
-当前版本不自动删除历史数据。小规模采集下 SQLite 很轻；需要长期运行时，可以定期删除旧数据：
-
-```sql
-DELETE FROM service_checks WHERE timestamp < datetime('now', '-30 days');
-DELETE FROM server_metrics WHERE timestamp < datetime('now', '-30 days');
-```
-
-## 展示与测试
-
-主题分段按钮与导航使用相同样式，从左到右为浅色、深色、自动（显示器图标），选择保存在本地。
-机器列表默认显示 CPU/RAM/DISK 圆环，网格卡片显示横条；无需展开即可查看指标和网络速率。
-点击整张机器卡片即可展开或收起，也可聚焦卡片后按 Enter 或空格；展开补充端点、集群、最近采集时间与状态。指标颜色为低于 60% 绿色、60% 起黄色、80% 起红色；此配色独立于服务器告警判定。
-网络速率显示为 bytes/s（由采集结果 bytes/min 换算）。
-服务历史中，时间段内全成功显示绿色、全失败显示红色、成功失败混合显示黄色、无数据为灰色，适用于 60 天与 48 小时视图。
+## 验证
 
 ```bash
 npm run lint
 npm run build
 node --test tests/status-utils.test.js
-python3 -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s tests -v
 ```
+
+部署后确认两个健康接口、匿名服务历史、受保护路径、本地备用登录、OIDC 跳转以及采集节奏。所有秘密与运行数据均不提交。
