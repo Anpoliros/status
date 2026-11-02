@@ -83,6 +83,8 @@ def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: b
     return {
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "overall_status": overall,
+        "collected_at": {"services": max((item["timestamp"] for item in services if item.get("timestamp")), default=None),
+                         "servers": max((item["timestamp"] for item in servers if item.get("timestamp")), default=None)},
         "services": services,
         "servers": [with_server_level(server) for server in servers],
         "history": {

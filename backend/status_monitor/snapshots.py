@@ -65,7 +65,7 @@ def history_snapshot(conn, current, kind, period):
         else:
             level = 'critical' if row['critical'] else 'warning' if row['warning'] else 'healthy'
         grouped.setdefault(row['resource_id'], []).append({'key': row['bucket'], 'level': level, 'total': row['total']})
-    return {'generated_at': current['generated_at'], 'collection_versions': current.get('collection_versions', {}), 'items': [
+    return {'generated_at': current['generated_at'], 'collected_at': current['collected_at'][kind], 'collection_versions': current.get('collection_versions', {}), 'items': [
         {key: item[key] for key in ('id', 'resource_id', 'name', 'url', 'ip', 'cluster') if key in item}
         | {'buckets': grouped.get(item['id'], [])} for item in current[kind]]}
 

@@ -60,6 +60,7 @@ function App() {
     return visible;
   }, [status, preferences]);
   const currentData = dashboard.mode === 'history' ? history : status;
+  const updatedAt = dashboard.mode === 'history' ? history?.collected_at : status?.collected_at?.[dashboard.resourceView === 'machines' ? 'servers' : 'services'];
   const loginError = new window.URLSearchParams(window.location.search).has('login_error');
 
   return <main className="page" style={{ '--page-width': preferences.width === '100%' ? '100%' : `${preferences.width}px`, '--max-columns': preferences.columns }}>
@@ -75,7 +76,7 @@ function App() {
         <ThemeSwitch theme={theme} setTheme={setTheme} />
       </div>
     </header>
-    <SettingsMenu open={menuOpen} onClose={closeMenu} machines={status?.servers || []} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={currentData?.generated_at} />
+    <SettingsMenu open={menuOpen} onClose={closeMenu} machines={status?.servers || []} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={updatedAt} />
     {loginError && !session?.user && <div className="notice">Shizunet login could not be completed. You can retry or use the local account in Account.</div>}
     {error && <div className="notice" role="alert">{error}{currentData && ' — showing the last available data.'}</div>}
     {dashboard.control?.clamped && <div className="notice" role="status">Requested {seconds}s; the server minimum is {dashboard.control.minimum_seconds}s.</div>}

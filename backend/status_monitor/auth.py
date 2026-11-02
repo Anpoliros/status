@@ -107,7 +107,7 @@ class Auth:
 
     def local_login(self, username, password):
         valid = verify_password(password, self.pseudo.get('password_hash', ''))
-        if not self.pseudo.get('enabled') or not hmac.compare_digest(username, self.pseudo.get('username','')) or not valid:
+        if not self.pseudo.get('enabled') or not hmac.compare_digest(username.encode(), str(self.pseudo.get('username','')).encode()) or not valid:
             raise ValueError('Invalid username or password')
         return self.new_session('local:pseudo', username)
 
