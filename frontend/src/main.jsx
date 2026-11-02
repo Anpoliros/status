@@ -52,7 +52,7 @@ function App() {
   }, [theme]);
 
   const machines = useMemo(() => {
-    const visible = (status?.servers || []).filter(server => !preferences.hiddenClusters.includes(server.cluster || 'Default') && !preferences.hiddenMachines.includes(server.id));
+    const visible = (status?.servers || []).filter(server => !preferences.hiddenClusters.includes(server.cluster || 'Default') && !preferences.hiddenMachines.includes(server.resource_id));
     const priority = { critical: 0, warning: 1, unknown: 2, healthy: 3 };
     if (preferences.sort === 'name') visible.sort((a, b) => a.name.localeCompare(b.name));
     else if (preferences.sort === 'status') visible.sort((a, b) => (priority[a.status] ?? 2) - (priority[b.status] ?? 2));

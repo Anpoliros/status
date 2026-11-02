@@ -28,7 +28,7 @@ def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: b
                 """
             ).fetchall()
         ),
-        {service.url: index for index, service in enumerate(config.services)},
+        {service.url: index for index, service in enumerate(sorted(config.services, key=lambda item: item.order))},
         "url",
     )
 
@@ -50,9 +50,20 @@ def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: b
                 """
             ).fetchall()
         ),
-        {server.target: index for index, server in enumerate(config.servers)},
+        {server.target: index for index, server in enumerate(sorted(config.servers, key=lambda item: item.order))},
         "ip",
     )
+
+    from .config import _identity
+    service_config = {item.url: item for item in config.services}
+    server_config = {item.target: item for item in config.servers}
+    for service in services:
+        definition = service_config.get(service['url'])
+        service['resource_id'] = definition.id if definition and definition.id else _identity('service', service['url'])
+        service['cluster'] = definition.cluster if definition else 'Default'
+    for server in servers:
+        definition = server_config.get(server['ip'])
+        server['resource_id'] = definition.id if definition and definition.id else _identity('server', server['ip'])
 
     monitored = services + servers
     if services and any(service["status"] == "down" for service in services):

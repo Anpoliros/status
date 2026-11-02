@@ -15,7 +15,7 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
   const pendingUntil = useRef(0);
   const pendingVersion = useRef(0);
   const pendingScope = useRef('servers');
-  const reading = useRef(false);
+  const reading = useRef('');
   const retryUntil = useRef(0);
   const loadSession = useCallback(async () => {
     try {
@@ -46,8 +46,8 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
 
   const load = useCallback(async () => {
     if (Date.now() < retryUntil.current) return;
-    if (reading.current) return;
-    reading.current = true;
+    if (reading.current === path) return;
+    reading.current = path;
     const id = ++requestId.current;
     const currentPath = path;
     try {
@@ -66,7 +66,7 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
       setError(failure.message);
       if (failure.status === 401) { setStatus(null); setHistory(null); loadSession(); }
     } finally {
-      reading.current = false;
+      if (reading.current === currentPath) reading.current = '';
       if (id === requestId.current && currentPath === latestPath.current) setLoading(false);
     }
   }, [path, loadSession]);

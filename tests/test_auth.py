@@ -4,12 +4,12 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 from backend.status_monitor.auth import Auth, password_hash, verify_password
-from test_status import StatusTests
+import test_status
 
 
 class AuthTests(unittest.TestCase):
     def test_local_login_and_logout_are_independent_of_oidc(self):
-        fixture = StatusTests()
+        fixture = test_status.StatusTests()
         fixture.setUp()
         with tempfile.TemporaryDirectory() as temp:
             config = replace(fixture.config,database=Path(temp)/'test.db',auth={

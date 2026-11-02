@@ -49,7 +49,7 @@ export function SettingsMenu({ open, onClose, machines, preferences, setPreferen
           <div className="settingsHeading"><strong>Clusters</strong><button onClick={() => setPreferences(previous => ({ ...previous, hiddenClusters: [], hiddenMachines: [] }))}>Show all</button></div>
           {clusters.map(cluster => <React.Fragment key={cluster}>
             <label className="checkRow"><strong>{cluster}</strong><input type="checkbox" checked={!preferences.hiddenClusters.includes(cluster)} onChange={() => toggle('hiddenClusters', cluster)} /></label>
-            {machines.filter(item => (item.cluster || 'Default') === cluster).map(item => <label className="checkRow machineFilter" key={item.id}><span>{item.name}</span><input type="checkbox" disabled={preferences.hiddenClusters.includes(cluster)} checked={!preferences.hiddenMachines.includes(item.id)} onChange={() => toggle('hiddenMachines', item.id)} /></label>)}
+            {machines.filter(item => (item.cluster || 'Default') === cluster).map(item => <label className="checkRow machineFilter" key={item.id}><span>{item.name}</span><input type="checkbox" disabled={preferences.hiddenClusters.includes(cluster)} checked={!preferences.hiddenMachines.includes(item.resource_id)} onChange={() => toggle('hiddenMachines', item.resource_id)} /></label>)}
           </React.Fragment>)}
           {!machines.length && <p className="muted">No machines available.</p>}
         </>}

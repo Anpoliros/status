@@ -18,6 +18,7 @@ class ServiceConfig:
     url: str
     cluster: str = 'Default'
     id: str = ''
+    order: int = 0
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,7 @@ class ServerConfig:
     target: str
     cluster: str = 'Default'
     id: str = ''
+    order: int = 0
 
 
 @dataclass(frozen=True)
@@ -113,7 +115,7 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
                 ids.add(identity)
                 endpoints.add((kind, endpoint))
                 target_list.append((ServiceConfig if kind == 'service' else ServerConfig)(
-                    str(item.get('name') or endpoint), endpoint, str(item.get('cluster') or 'Default'), identity))
+                    str(item.get('name') or endpoint), endpoint, str(item.get('cluster') or 'Default'), identity, int(item.get('order', 0))))
         definitions = resource.get('prometheus', [])
         if isinstance(definitions, dict):
             definitions = [definitions]
@@ -128,6 +130,9 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
     if len(refresh['presets']) != 3 or any(not isinstance(x, int) or x <= 0 or x > 86400 for x in refresh['presets']):
         raise ValueError('Exactly three refresh presets between 1 and 86400 are required')
     auth = raw.get('auth', {})
+    snapshot_path = repository_path(environment.get('STATUS_JSON') or raw.get('status_json', 'data/snapshots/current.json')).resolve()
+    if any(public == snapshot_path or public in snapshot_path.parents for public in (ROOT/'dist', ROOT/'public', ROOT/'frontend/public')):
+        raise ValueError('Snapshots must be outside public frontend directories')
     oidc = auth.get('shizunet', {})
     if oidc.get('enabled') and any(not oidc.get(k) for k in ('issuer', 'client_id', 'client_secret', 'base_url')):
         raise ValueError('Enabled Shizunet requires issuer, client_id, client_secret and base_url')
@@ -141,6 +146,6 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
         raise ValueError('Intervals, thresholds and timeouts must be positive')
     return AppConfig(
         database=repository_path(environment.get('STATUS_DATABASE') or raw.get('database', 'data/status.db')),
-        status_json=repository_path(environment.get('STATUS_JSON') or raw.get('status_json', 'data/snapshots/current.json')),
+        status_json=snapshot_path,
         request_timeout_seconds=float(raw.get('request_timeout_seconds', 8)),
         services=services, servers=servers, sources=sources, auth=auth, refresh=refresh, **values)

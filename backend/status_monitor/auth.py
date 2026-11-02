@@ -9,6 +9,7 @@ import secrets
 import sqlite3
 import threading
 import time
+from contextlib import contextmanager
 from http.cookies import SimpleCookie
 from urllib.parse import urlencode
 
@@ -60,12 +61,18 @@ class Auth:
         with self.connect() as conn:
             conn.executescript(SCHEMA)
 
+    @contextmanager
     def connect(self):
         self.config.state_database.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.config.state_database, timeout=5)
+        self.config.state_database.chmod(0o600)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA journal_mode=WAL')
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def cookie(self, name, value, seconds):
         return f'{name}={value}; Path=/; HttpOnly; SameSite=Lax; Max-Age={seconds}' + ('; Secure' if self.secure else '')
@@ -155,7 +162,8 @@ class Auth:
             data={'grant_type':'authorization_code','code':query.get('code',[''])[0],
                   'redirect_uri':self.callback,'code_verifier':flow['verifier']}, timeout=8)
         response.raise_for_status()
-        encoded = response.json()['id_token']
+        tokens = response.json()
+        encoded = tokens['id_token']
         key = self.jwks.get_signing_key_from_jwt(encoded)
         claims = jwt.decode(encoded,key.key,algorithms=['RS256'],audience=self.oidc['client_id'],
                             issuer=metadata['issuer'],options={'require':['exp','iat','iss','aud','sub','nonce']})
@@ -163,7 +171,14 @@ class Auth:
             raise ValueError('OIDC nonce mismatch')
         if isinstance(claims['aud'],list) and len(claims['aud'])>1 and claims.get('azp') != self.oidc['client_id']:
             raise ValueError('OIDC authorized party mismatch')
-        return self.new_session(metadata['issuer']+'|'+claims['sub'],claims.get('name') or claims['sub'])
+        profile = claims
+        if metadata.get('userinfo_endpoint') and tokens.get('access_token'):
+            info = requests.get(metadata['userinfo_endpoint'], headers={'Authorization':'Bearer '+tokens['access_token']},timeout=8)
+            info.raise_for_status()
+            profile = info.json()
+            if profile.get('sub') != claims['sub']:
+                raise ValueError('OIDC userinfo subject mismatch')
+        return self.new_session(metadata['issuer']+'|'+claims['sub'],profile.get('name') or profile.get('preferred_username') or claims['sub'])
 
 
 if __name__ == '__main__':

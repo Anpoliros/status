@@ -5,6 +5,7 @@ import math
 import re
 import sqlite3
 import time
+from contextlib import contextmanager
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS leases (
@@ -17,11 +18,16 @@ CREATE TABLE IF NOT EXISTS schedule (
 '''
 
 
+@contextmanager
 def connection(config):
     conn = sqlite3.connect(config.state_database,timeout=5)
     conn.row_factory = sqlite3.Row
     conn.execute('PRAGMA journal_mode=WAL')
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_control(config):
@@ -69,7 +75,7 @@ def control_request(config,owner,payload):
             raise ValueError('Page lease owner mismatch')
         if action=='release':
             conn.execute('DELETE FROM leases WHERE page=? AND owner=?',(page,owner))
-        elif scope=='servers':
+        elif scope=='servers' and action!='refresh':
             count = conn.execute('SELECT COUNT(*) FROM leases WHERE owner=?',(owner,)).fetchone()[0]
             total = conn.execute('SELECT COUNT(*) FROM leases').fetchone()[0]
             if not existing and (count>=16 or total>=512):

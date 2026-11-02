@@ -35,3 +35,18 @@ class SchedulerTests(unittest.TestCase):
             self.assertEqual(control_request(config,'owner',dict(first,action='heartbeat'))['effective_seconds'],60)
             with self.assertRaises(ValueError):
                 control_request(config,'intruder',first)
+
+    def test_expired_leases_and_manual_refresh_do_not_keep_worker_active(self):
+        with tempfile.TemporaryDirectory() as temp:
+            config = replace(load_config('configs/general.example.json'),database=Path(temp)/'test.db')
+            init_control(config)
+            page = {'page':'c'*20,'action':'refresh','seconds':60}
+            control_request(config,'owner',page)
+            with connection(config) as conn:
+                self.assertEqual(conn.execute('SELECT COUNT(*) FROM leases').fetchone()[0],0)
+            control_request(config,'owner',dict(page,action='connect'))
+            with connection(config) as conn:
+                conn.execute('UPDATE leases SET expires=90')
+                conn.execute('UPDATE schedule SET last_started=100,requested=0')
+            self.assertFalse(claim_due(config,'servers',399))
+            self.assertTrue(claim_due(config,'servers',400))

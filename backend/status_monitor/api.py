@@ -199,6 +199,9 @@ class StatusHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _static(self,request_path):
+        if request_path not in ('/', '/index.html', '/favicon.ico') and not request_path.startswith('/assets/'):
+            self._json({'error':'Not found'},404)
+            return
         root = self.static_dir.resolve()
         candidate = (root/(request_path.lstrip('/') or 'index.html')).resolve()
         if root not in candidate.parents or (candidate.suffix and candidate.suffix not in ('.html','.js','.css','.svg','.png','.ico','.woff2')):

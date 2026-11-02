@@ -26,7 +26,7 @@ export function ServicesView({ services }) {
 }
 
 export function HistoryView({ history, range, setRange, resourceView, preferences }) {
-  const items = (history?.items || []).filter(item => resourceView === 'services' || (!preferences.hiddenClusters.includes(item.cluster || 'Default') && !preferences.hiddenMachines.includes(item.id)));
+  const items = (history?.items || []).filter(item => resourceView === 'services' || (!preferences.hiddenClusters.includes(item.cluster || 'Default') && !preferences.hiddenMachines.includes(item.resource_id)));
   return <section className="contentCard"><div className="historyControls"><div className="segmented"><button className={range === '60d' ? 'selected' : ''} onClick={() => setRange('60d')}>60 days</button><button className={range === '48h' ? 'selected' : ''} onClick={() => setRange('48h')}>48 hours</button></div></div>
     <div className="historySection"><h2>{resourceView === 'services' ? 'Services' : 'Machines'}</h2><div className="historyList">{items.map(item => <HistoryRow key={item.id} item={item} range={range} />)}{!items.length && <EmptyState label="No history available" />}</div></div>
   </section>;
