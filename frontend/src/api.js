@@ -17,7 +17,7 @@ export async function request(path, options = {}) {
 }
 
 export function post(path, body) {
-  return request(path, { method: 'POST', body: JSON.stringify(body) });
+  return request(path, { keepalive: body.action === 'release', method: 'POST', body: JSON.stringify(body) });
 }
 
 export function readPreference(key, fallback) {

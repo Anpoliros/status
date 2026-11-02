@@ -18,7 +18,7 @@ class SchedulerTests(unittest.TestCase):
 
     def test_multiple_pages_and_expiry(self):
         with tempfile.TemporaryDirectory() as temp:
-            config = replace(load_config(),database=Path(temp)/'test.db')
+            config = replace(load_config('configs/general.example.json'),database=Path(temp)/'test.db')
             init_control(config)
             first = {'page':'a'*20,'action':'connect','seconds':60}
             second = {'page':'b'*20,'action':'connect','seconds':5}

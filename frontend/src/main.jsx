@@ -60,7 +60,7 @@ function App() {
     return visible;
   }, [status, preferences]);
   const currentData = dashboard.mode === 'history' ? history : status;
-  const loginError = new URLSearchParams(window.location.search).has('login_error');
+  const loginError = new window.URLSearchParams(window.location.search).has('login_error');
 
   return <main className="page" style={{ '--page-width': preferences.width === '100%' ? '100%' : `${preferences.width}px`, '--max-columns': preferences.columns }}>
     <header className="topbar">

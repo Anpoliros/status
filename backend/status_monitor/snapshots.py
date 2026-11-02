@@ -65,7 +65,7 @@ def history_snapshot(conn, current, kind, period):
         else:
             level = 'critical' if row['critical'] else 'warning' if row['warning'] else 'healthy'
         grouped.setdefault(row['resource_id'], []).append({'key': row['bucket'], 'level': level, 'total': row['total']})
-    return {'generated_at': current['generated_at'], 'items': [
+    return {'generated_at': current['generated_at'], 'collection_versions': current.get('collection_versions', {}), 'items': [
         {key: item[key] for key in ('id', 'name', 'url', 'ip', 'cluster') if key in item}
         | {'buckets': grouped.get(item['id'], [])} for item in current[kind]]}
 
@@ -86,6 +86,10 @@ def publish_snapshots(conn: sqlite3.Connection, config: AppConfig) -> None:
     update_bins(conn)
     current = build_status(conn, config, include_history=False)
     current.pop('history', None)
+    from .scheduler import connection, init_control
+    init_control(config)
+    with connection(config) as control:
+        current['collection_versions'] = {row['scope']: row['completed'] for row in control.execute('SELECT scope,completed FROM schedule')}
     for kind in ('services', 'servers'):
         for period in ('48h', '60d'):
             atomic_json(config.status_json.parent / f'{kind}-{period}.json', history_snapshot(conn, current, kind, period))

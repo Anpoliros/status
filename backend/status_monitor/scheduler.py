@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS leases (
 );
 CREATE TABLE IF NOT EXISTS schedule (
  scope TEXT PRIMARY KEY, last_started REAL NOT NULL DEFAULT 0,
- requested INTEGER NOT NULL DEFAULT 0, boot TEXT NOT NULL
+ requested INTEGER NOT NULL DEFAULT 0, completed INTEGER NOT NULL DEFAULT 0, boot TEXT NOT NULL
 );
 '''
 
@@ -82,7 +82,7 @@ def control_request(config,owner,payload):
         state = conn.execute('SELECT * FROM schedule WHERE scope=?',(scope,)).fetchone()
     return {'accepted_seconds':accepted,'minimum_seconds':minimum,'clamped':seconds<minimum,
             'effective_seconds':effective_interval(minimum,config.refresh['idle_seconds'],intervals),
-            'wait_seconds':max(0,state['last_started']+minimum-now),'pending':bool(state['requested'])}
+            'wait_seconds':max(0,state['last_started']+minimum-now),'pending':bool(state['requested']), 'version':state['completed']}
 
 
 def claim_due(config,scope,now=None):
@@ -103,4 +103,4 @@ def claim_due(config,scope,now=None):
 def finish_collection(config,scope):
     # Requests arriving during a collection share that result, avoiding a trailing job.
     with connection(config) as conn:
-        conn.execute('UPDATE schedule SET requested=0 WHERE scope=?',(scope,))
+        conn.execute('UPDATE schedule SET requested=0,completed=completed+1 WHERE scope=?',(scope,))
