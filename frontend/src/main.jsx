@@ -1,117 +1,95 @@
 /**
  * @file frontend/src/main.jsx
- * @description Status dashboard with independent machine, service, and history views.
+ * @description Status dashboard navigation, local display settings and authenticated views.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Activity, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, Filter, LayoutGrid, List, Moon, Monitor, RefreshCcw, Server, Sun, WifiOff } from 'lucide-react';
-import { MachineCard } from './MachineCard.jsx';
-import { serviceHistoryLevel } from './status-utils.js';
+import { Moon, Monitor, RefreshCcw, Settings2, Sun } from 'lucide-react';
+import { readPreference } from './api.js';
+import { SettingsMenu } from './SettingsMenu.jsx';
+import { EmptyState, HistoryView, MachinesView, ServicesView } from './Views.jsx';
+import { useDashboard } from './useDashboard.js';
 import './styles.css';
 
-const API_BASE = import.meta.env.VITE_STATUS_API || '';
-const MACHINE_REFRESH = [10, 20, 60];
-const THEME_ORDER = ['light', 'dark', 'system'];
+const DEFAULT_DISPLAY = { hiddenClusters: [], hiddenMachines: [], sort: 'config', layout: 'list', width: '1220', columns: 3 };
 
 function App() {
   const [resourceView, setResourceView] = useState('machines');
   const [mode, setMode] = useState('status');
-  const [status, setStatus] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshSeconds, setRefreshSeconds] = useState(60);
-  const [layout, setLayout] = useState('list');
-  const [historyRange, setHistoryRange] = useState('60d');
+  const [range, setRange] = useState('60d');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [preferences, setPreferences] = useState(() => ({ ...DEFAULT_DISPLAY, ...readPreference('display', {}) }));
+  const [presets, setPresets] = useState(() => readPreference('refresh-presets', [10, 20, 60]));
+  const [selectedPreset, setSelectedPreset] = useState(() => readPreference('refresh-selected', 2));
+  const [automatic, setAutomatic] = useState(() => readPreference('automatic', true));
   const [theme, setTheme] = useState(() => localStorage.getItem('status-theme') || 'system');
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedClusters, setSelectedClusters] = useState(null);
-  const scope = mode === 'status' ? (resourceView === 'services' ? 'services' : 'servers') : '';
-
-  async function loadStatus({ probe = scope } = {}) {
-    try {
-      const query = probe ? `?probe=${probe}` : '';
-      const response = await fetch(`${API_BASE}/status${query}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      setStatus(await response.json());
-      setError('');
-    } catch (apiError) {
-      try {
-        const response = await fetch('/status.json', { cache: 'no-store' });
-        if (!response.ok) throw apiError;
-        setStatus(await response.json());
-        setError('API unavailable, showing generated status.json');
-      } catch {
-        setError(apiError.message || 'Unable to load status');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+  const seconds = presets[selectedPreset] || 60;
+  const dashboard = useDashboard({ resourceView, mode, range, seconds, automatic });
+  const { session, status, history, loading, updating, error } = dashboard;
+  const full = Boolean(session?.full_access);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
-    setLoading(true);
-    loadStatus();
-    const interval = mode === 'history' ? 60000 : resourceView === 'services' ? 600000 : refreshSeconds * 1000;
-    const timer = window.setInterval(() => loadStatus(), interval);
-    return () => window.clearInterval(timer);
-  }, [mode, resourceView, refreshSeconds]);
+    if (session && !localStorage.getItem('status-refresh-presets')) setPresets(session.refresh.presets);
+  }, [session]);
+  useEffect(() => {
+    localStorage.setItem('status-display', JSON.stringify(preferences));
+    localStorage.setItem('status-refresh-selected', JSON.stringify(selectedPreset));
+    localStorage.setItem('status-automatic', JSON.stringify(automatic));
+  }, [preferences, selectedPreset, automatic]);
+  const updatePresets = update => setPresets(previous => {
+    const next = typeof update === 'function' ? update(previous) : update;
+    localStorage.setItem('status-refresh-presets', JSON.stringify(next));
+    return next;
+  });
 
   useEffect(() => {
-    const applyTheme = () => {
-      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      document.documentElement.dataset.theme = theme === 'system' ? (dark ? 'dark' : 'light') : theme;
-    };
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    applyTheme();
-    localStorage.setItem('status-theme', theme);
-    media.addEventListener('change', applyTheme);
-    return () => media.removeEventListener('change', applyTheme);
+    const apply = () => { document.documentElement.dataset.theme = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme; };
+    apply(); localStorage.setItem('status-theme', theme);
+    media.addEventListener('change', apply);
+    return () => media.removeEventListener('change', apply);
   }, [theme]);
 
-  const clusters = useMemo(() => unique((status?.servers || []).map((server) => server.cluster || 'Default')), [status]);
-  const visibleServers = (status?.servers || []).filter((server) => !selectedClusters || selectedClusters.has(server.cluster || 'Default'));
+  const machines = useMemo(() => {
+    const visible = (status?.servers || []).filter(server => !preferences.hiddenClusters.includes(server.cluster || 'Default') && !preferences.hiddenMachines.includes(server.id));
+    const priority = { critical: 0, warning: 1, unknown: 2, healthy: 3 };
+    if (preferences.sort === 'name') visible.sort((a, b) => a.name.localeCompare(b.name));
+    else if (preferences.sort === 'status') visible.sort((a, b) => (priority[a.status] ?? 2) - (priority[b.status] ?? 2));
+    else if (preferences.sort !== 'config') visible.sort((a, b) => (b[preferences.sort] ?? -1) - (a[preferences.sort] ?? -1));
+    return visible;
+  }, [status, preferences]);
+  const currentData = dashboard.mode === 'history' ? history : status;
+  const loginError = new URLSearchParams(window.location.search).has('login_error');
 
-  return (
-    <main className="page">
-      <header className="topbar"><nav className="navigation" aria-label="Primary navigation"><div className="segmented iconSegments"><button className={filterOpen ? 'selected' : ''} aria-label="Filter machines" aria-expanded={filterOpen} onClick={() => setFilterOpen((open) => !open)}><Filter size={18} /></button></div><div className="segmented"><button className={resourceView === 'machines' ? 'selected' : ''} onClick={() => setResourceView('machines')}>Machines</button><button className={resourceView === 'services' ? 'selected' : ''} onClick={() => setResourceView('services')}>Services</button></div><div className="segmented"><button className={mode === 'status' ? 'selected' : ''} onClick={() => setMode('status')}>Status</button><button className={mode === 'history' ? 'selected' : ''} onClick={() => setMode('history')}>History</button></div></nav><div className="topActions">{mode === 'status' && resourceView === 'machines' && <div className="segmented">{MACHINE_REFRESH.map((seconds) => <button key={seconds} className={refreshSeconds === seconds ? 'selected' : ''} onClick={() => setRefreshSeconds(seconds)}>{seconds}s</button>)}</div>}<div className="segmented iconSegments"><button onClick={() => loadStatus()} aria-label="Refresh status" title="Refresh status"><RefreshCcw size={18} /></button></div><ThemeSwitch theme={theme} setTheme={setTheme} /></div></header>
-      {error && <div className="notice">{error}</div>}{loading && <div className="notice">Loading current status...</div>}
-      {mode === 'status' && resourceView === 'machines' && <MachinesView servers={visibleServers} clusters={clusters} selectedClusters={selectedClusters} setSelectedClusters={setSelectedClusters} filterOpen={filterOpen} setFilterOpen={setFilterOpen} layout={layout} setLayout={setLayout} />}
-      {mode === 'status' && resourceView === 'services' && <ServicesView services={status?.services || []} />}
-      {mode === 'history' && <HistoryView history={status?.history} range={historyRange} setRange={setHistoryRange} resourceView={resourceView} />}
-    </main>
-  );
+  return <main className="page" style={{ '--page-width': preferences.width === '100%' ? '100%' : `${preferences.width}px`, '--max-columns': preferences.columns }}>
+    <header className="topbar">
+      <nav className="navigation" aria-label="Primary navigation">
+        <div className="segmented iconSegments"><button data-menu-trigger className={menuOpen ? 'selected' : ''} aria-label="Settings" aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)}><Settings2 size={18} /></button></div>
+        <div className="segmented"><button disabled={!full} className={dashboard.resourceView === 'machines' ? 'selected' : ''} onClick={() => setResourceView('machines')}>Machines</button><button className={dashboard.resourceView === 'services' ? 'selected' : ''} onClick={() => setResourceView('services')}>Services</button></div>
+        <div className="segmented"><button disabled={!full} className={dashboard.mode === 'status' ? 'selected' : ''} onClick={() => setMode('status')}>Status</button><button className={dashboard.mode === 'history' ? 'selected' : ''} onClick={() => setMode('history')}>History</button></div>
+      </nav>
+      <div className="topActions">
+        {dashboard.mode === 'status' && dashboard.resourceView === 'machines' && <div className="segmented">{presets.map((value, index) => <button key={index} className={selectedPreset === index ? 'selected' : ''} onClick={() => setSelectedPreset(index)}>{value}s</button>)}</div>}
+        <div className="segmented iconSegments"><button onClick={dashboard.refresh} disabled={updating || !session} aria-label="Refresh status" title="Refresh status"><RefreshCcw size={18} className={updating ? 'refreshing' : ''} /></button></div>
+        <ThemeSwitch theme={theme} setTheme={setTheme} />
+      </div>
+    </header>
+    <SettingsMenu open={menuOpen} onClose={closeMenu} machines={status?.servers || []} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={currentData?.generated_at} />
+    {loginError && !session?.user && <div className="notice">Shizunet login could not be completed. You can retry or use the local account in Account.</div>}
+    {error && <div className="notice" role="alert">{error}{currentData && ' — showing the last available data.'}</div>}
+    {dashboard.control?.clamped && <div className="notice" role="status">Requested {seconds}s; the server minimum is {dashboard.control.minimum_seconds}s.</div>}
+    {updating && <div className="notice" role="status">Updating data… Existing measurements remain visible.</div>}
+    {(loading && !currentData) ? <div className="loadingState" role="status"><span className="loadingPulse" />Loading {dashboard.mode === 'history' ? 'history' : 'current status'}…</div> : !currentData ? <EmptyState label={error ? 'Unable to load data. Use Refresh to retry.' : 'Waiting for the first collection'} /> : <>
+      {dashboard.mode === 'status' && dashboard.resourceView === 'machines' && <MachinesView servers={machines} preferences={preferences} setPreferences={setPreferences} />}
+      {dashboard.mode === 'status' && dashboard.resourceView === 'services' && <ServicesView services={status.services} />}
+      {dashboard.mode === 'history' && <HistoryView history={history} range={range} setRange={setRange} resourceView={dashboard.resourceView} preferences={preferences} />}
+    </>}
+  </main>;
 }
 
-function MachinesView({ servers, clusters, selectedClusters, setSelectedClusters, filterOpen, setFilterOpen, layout, setLayout }) {
-  return <>{filterOpen && <FilterPanel clusters={clusters} selectedClusters={selectedClusters} setSelectedClusters={setSelectedClusters} />}{clusters.map((cluster) => { const items = servers.filter((server) => (server.cluster || 'Default') === cluster); if (!items.length) return null; return <div className="clusterBlock" key={cluster}><div className="clusterHeader"><div><h2>{cluster}</h2><span>{items.length} machines</span></div><div className="segmented iconSegments"><button className={layout === 'list' ? 'selected' : ''} onClick={() => setLayout('list')} aria-label="List view"><List size={16} /></button><button className={layout === 'grid' ? 'selected' : ''} onClick={() => setLayout('grid')} aria-label="Grid view"><LayoutGrid size={16} /></button></div></div><div className={`machineList ${layout}`}>{items.map((server) => <MachineCard key={server.id || server.ip} server={server} layout={layout} />)}</div></div>; })}{!servers.length && <EmptyState label="No machines selected" />}</>;
-}
-
-function ServicesView({ services }) { return <section className="contentCard"><div className="serviceList">{services.map((service) => <ServiceCard key={service.id || service.url} service={service} />)}{!services.length && <EmptyState label="No services configured" />}</div></section>; }
-function HistoryView({ history, range, setRange, resourceView }) { const services = unique((history?.services || []).map((item) => item.url)); const servers = unique((history?.servers || []).map((item) => item.ip)); const hours = range === '60d' ? 60 * 24 : 48; const rows = resourceView === 'services' ? services.map((url) => <HistoryRow key={url} url={url} items={(history?.services || []).filter((item) => item.url === url)} kind="service" hours={hours} />) : servers.map((ip) => { const item = (history?.servers || []).find((entry) => entry.ip === ip); return <HistoryRow key={ip} url={item?.name || ip} items={(history?.servers || []).filter((entry) => entry.ip === ip)} kind="server" hours={hours} />; }); return <section className="contentCard"><div className="historyControls"><div className="segmented"><button className={range === '60d' ? 'selected' : ''} onClick={() => setRange('60d')}>60 days</button><button className={range === '48h' ? 'selected' : ''} onClick={() => setRange('48h')}>48 hours</button></div></div><div className="historySection"><h2>{resourceView === 'services' ? 'Services' : 'Machines'}</h2><div className="historyList">{rows}{!rows.length && <EmptyState label={`No ${resourceView === 'services' ? 'service' : 'machine'} history yet`} />}</div></div></section>; }
-function FilterPanel({ clusters, selectedClusters, setSelectedClusters }) { const active = selectedClusters || new Set(clusters); const toggle = (cluster) => { const next = new Set(active); if (next.has(cluster)) next.delete(cluster); else next.add(cluster); setSelectedClusters(next.size === clusters.length ? null : next); }; return <aside className="filterPanel"><div className="filterHeader"><strong>Display</strong></div>{clusters.map((cluster) => <label className="checkRow" key={cluster}><span>{cluster}</span><input type="checkbox" checked={active.has(cluster)} onChange={() => toggle(cluster)} /></label>)}</aside>; }
-function ServiceCard({ service }) { const level = service.status === 'up' ? 'healthy' : 'critical'; return <article className="serviceCard"><div className="serviceIdentity"><span className={`statusDot ${level}`} /><div><h3>{service.name}</h3><p>{service.url}</p></div></div><div className="serviceMetric">{level === 'healthy' ? <CheckCircle2 size={15} /> : <WifiOff size={15} />}<span>{service.latency_ms == null ? 'Down' : `${service.latency_ms} ms`}</span></div></article>; }
-function HistoryRow({ url, items, kind, hours }) { const isHours = hours === 48; const count = isHours ? 48 : 60; const days = Array.from({ length: count }, (_, index) => { const date = new Date(Date.now() - (count - 1 - index) * (isHours ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000)); const key = isHours ? date.toISOString().slice(0, 13) : date.toISOString().slice(0, 10); const checks = items.filter((item) => (isHours ? item.timestamp?.slice(0, 13) : item.timestamp?.slice(0, 10)) === key); if (!checks.length) return { key, level: 'missing' }; if (kind === 'service') return { key, level: serviceHistoryLevel(checks) }; const worst = checks.reduce((level, item) => levelRank(metricLevel(item)) > levelRank(level) ? metricLevel(item) : level, 'healthy'); return { key, level: worst }; }); const uptime = Math.round((days.filter((item) => item.level === 'healthy').length / Math.max(1, days.filter((item) => item.level !== 'missing').length)) * 100); return <div className="historyRow"><div className="historyIdentity"><strong>{url.replace(/^https?:\/\//, '')}</strong><span className={`statusDot ${days.at(-1)?.level || 'missing'}`} /></div><div className="uptimeBar" style={{ '--segments': count }}>{days.map((item) => <span key={item.key} className={item.level} title={`${item.key}: ${item.level}`} />)}</div><div className="historyLabels"><span>{isHours ? '48 hours ago' : '60 days ago'}</span><strong>{uptime}% uptime</strong><span>Today</span></div></div>; }
-function metricLevel(item) { const values = [item.cpu_usage, item.memory_usage, item.disk_usage].filter((value) => value != null); if (!values.length) return 'critical'; if (values.some((value) => value >= 95)) return 'critical'; if (values.some((value) => value >= 80)) return 'warning'; return 'healthy'; }
-function levelRank(level) { return { healthy: 0, warning: 1, critical: 2 }[level] ?? 3; }
-function EmptyState({ label }) { return <div className="empty">{label}</div>; }
-function unique(values) { return [...new Set(values)]; }
-function formatDate(value) { return value ? new Date(value).toLocaleString() : 'No data yet'; }
-function formatRate(value) { return value == null ? '-' : `${formatBytes(value)}/s`; }
-function formatBytes(value) { if (value == null) return '-'; const units = ['B', 'KB', 'MB', 'GB', 'TB']; let size = value; let unit = 0; while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit += 1; } return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`; }
-// Share the navigation controls' segmented appearance and native button behavior.
 function ThemeSwitch({ theme, setTheme }) {
-  const icons = { light: Sun, dark: Moon, system: Monitor };
-  const labels = { light: 'Light', dark: 'Dark', system: 'Automatic' };
-  return <div className="segmented iconSegments" role="group" aria-label="Theme">
-    {THEME_ORDER.map((value) => {
-      const Icon = icons[value];
-      return <button key={value} className={theme === value ? 'selected' : ''}
-        aria-label={labels[value]} aria-pressed={theme === value} title={labels[value]}
-        onClick={() => setTheme(value)}><Icon size={18} /></button>;
-    })}
-  </div>;
+  return <div className="segmented iconSegments" role="group" aria-label="Theme">{[['light', Sun, 'Light'], ['dark', Moon, 'Dark'], ['system', Monitor, 'Automatic']].map(([value, Icon, label]) => <button key={value} className={theme === value ? 'selected' : ''} aria-label={label} aria-pressed={theme === value} onClick={() => setTheme(value)}><Icon size={18} /></button>)}</div>;
 }
-function summaryFor(status) { return status === 'healthy' ? 'All monitored systems are healthy.' : status === 'warning' ? 'Some machines are under heavy load.' : status === 'critical' ? 'One or more systems need immediate attention.' : 'Waiting for the first monitoring cycle.'; }
-function StatusIcon({ status }) { return status === 'healthy' ? <CheckCircle2 size={24} /> : status === 'warning' ? <CircleAlert size={24} /> : status === 'critical' ? <WifiOff size={24} /> : <Server size={24} />; }
 
 createRoot(document.getElementById('root')).render(<App />);

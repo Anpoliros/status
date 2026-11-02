@@ -94,3 +94,33 @@ h1, h2, h3, p { margin: 0; } h2 { font-size: 20px; } h3 { font-size: 18px; } h1 
 .machineDetails dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 1000px) { .topbar { flex-wrap: wrap; } .machineOverview { grid-template-columns: 1fr; } .machineOverview .metricGrid { padding-right: 0; } .machineHeader .statusDot { position: static; transform: none; } }
 @media (max-width: 600px) { .machineOverview .metricGrid { grid-template-columns: repeat(3, 1fr); } .machineOverview .networkMetric { grid-column: 1 / -1; } .metricRing { flex-direction: column; } .topActions { flex-wrap: wrap; } }
+
+/* ============================== Settings and loading states ============================== */
+.page { width: min(var(--page-width, 1220px), calc(100% - 48px)); position: relative; }
+.settingsMenu { position: absolute; z-index: 20; top: 88px; left: 0; width: min(420px, 100%); border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--card) 94%, transparent); backdrop-filter: blur(18px); box-shadow: 0 12px 32px #0002; overflow: hidden; }
+.menuTabs { display: flex; border: 0; border-bottom: 1px solid var(--border-soft); border-radius: 0; padding: 8px; background: transparent; box-shadow: none; }
+.menuTabs button { flex: 1; padding-inline: 8px; }
+.settingsContent { padding: 16px; max-height: min(65vh, 640px); overflow-y: auto; }
+.settingsContent .muted { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 10px 0; }
+.settingsHeading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.settingsHeading button { border: 0; background: none; color: var(--muted); cursor: pointer; }
+.machineFilter { padding-left: 15px; font-size: 13px; }
+.settingRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+.settingRow input { width: 90px; }
+.settingRow input, .settingRow select, .loginForm input { min-height: 32px; border: 1px solid var(--border); border-radius: 6px; color: var(--foreground); background: var(--surface); padding: 5px 8px; font: inherit; max-width: 55%; }
+.menuButton { display: inline-block; padding: 9px 12px; margin: 12px 0 0; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--foreground); text-decoration: none; cursor: pointer; font: inherit; font-size: 13px; }
+.loginForm { display: grid; gap: 12px; margin-top: 20px; }
+.loginForm label { display: grid; gap: 6px; font-size: 13px; }
+.loginForm input { width: 100%; max-width: none; }
+.loginForm .menuButton { margin-top: 0; }
+.controlWarning { color: var(--warning); font-size: 13px; line-height: 1.5; }
+button:disabled { opacity: .45; cursor: default; }
+.notice { margin-top: 12px; }
+.loadingState { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 180px; margin-top: 24px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--muted); }
+.loadingPulse { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); animation: pulse 1s ease-in-out infinite alternate; }
+.refreshing { animation: rotate 1.2s linear infinite; }
+@keyframes pulse { to { opacity: .2; } }
+@keyframes rotate { to { transform: rotate(360deg); } }
+.machineList.grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(270px, calc((100% - (var(--max-columns, 3) - 1) * 8px) / var(--max-columns, 3)))), 1fr)); }
+@media (max-width: 800px) { .page { width: calc(100% - 24px); } .settingsMenu { top: 124px; } }
+@media (prefers-reduced-motion: reduce) { .loadingPulse, .refreshing { animation: none; } }
