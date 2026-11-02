@@ -1,3 +1,4 @@
+"""Build current status and legacy raw-history queries for offline tooling."""
 from __future__ import annotations
 
 import json
@@ -9,7 +10,7 @@ from typing import Any
 from .config import AppConfig
 
 
-def build_status(conn: sqlite3.Connection, config: AppConfig) -> dict[str, Any]:
+def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: bool = True) -> dict[str, Any]:
     services = _sort_by_config(
         (
             dict(row)
@@ -74,8 +75,8 @@ def build_status(conn: sqlite3.Connection, config: AppConfig) -> dict[str, Any]:
         "services": services,
         "servers": [with_server_level(server) for server in servers],
         "history": {
-            "services": service_history(conn, config.history_hours),
-            "servers": server_history(conn, config.history_hours),
+            "services": service_history(conn, config.history_hours) if include_history else [],
+            "servers": server_history(conn, config.history_hours) if include_history else [],
         },
     }
 
@@ -112,13 +113,9 @@ def server_history(conn: sqlite3.Connection, hours: int = 24) -> list[dict[str, 
 
 
 def write_status_json(conn: sqlite3.Connection, config: AppConfig) -> None:
-    payload = build_status(conn, config)
-    _write_json(config.status_json, payload)
-
-
-def _write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    # Keep the worker entry point stable while snapshots own materialization.
+    from .snapshots import publish_snapshots
+    publish_snapshots(conn, config)
 
 
 def _sort_by_config(rows: Any, order: dict[str, int], key: str) -> list[dict[str, Any]]:
