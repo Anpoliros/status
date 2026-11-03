@@ -37,7 +37,7 @@ def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: b
             dict(row)
             for row in conn.execute(
                 """
-                SELECT s.id, s.name, s.ip, s.cluster,
+                SELECT s.id, s.resource_id, s.name, s.ip, s.cluster,
                        m.timestamp, m.cpu_usage, m.memory_usage, m.disk_usage,
                        m.network_in, m.network_out
                 FROM servers s
@@ -47,23 +47,24 @@ def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: b
                   ORDER BY timestamp DESC, id DESC
                   LIMIT 1
                 )
+                WHERE s.active=1
                 """
             ).fetchall()
         ),
-        {server.target: index for index, server in enumerate(sorted(config.servers, key=lambda item: item.order))},
+        {server.target: index for index, server in enumerate(sorted(config.all_servers, key=lambda item: item.order))},
         "ip",
     )
 
     from .config import _identity
     service_config = {item.url: item for item in config.services}
-    server_config = {item.target: item for item in config.servers}
+    server_config = {item.target: item for item in config.all_servers}
     for service in services:
         definition = service_config.get(service['url'])
         service['resource_id'] = definition.id if definition and definition.id else _identity('service', service['url'])
         service['cluster'] = definition.cluster if definition else 'Default'
     for server in servers:
         definition = server_config.get(server['ip'])
-        server['resource_id'] = definition.id if definition and definition.id else _identity('server', server['ip'])
+        server['resource_id'] = server['resource_id'] or _identity('server', server['ip'])
 
     monitored = services + servers
     if services and any(service["status"] == "down" for service in services):

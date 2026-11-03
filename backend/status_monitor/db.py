@@ -4,7 +4,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from .config import AppConfig, ServerConfig, ServiceConfig
+from .config import AppConfig, ServerConfig, ServiceConfig, _identity
 
 
 SCHEMA = """
@@ -77,16 +77,21 @@ def init_db(conn: sqlite3.Connection) -> None:
     columns = {row["name"] for row in conn.execute("PRAGMA table_info(servers)")}
     if "cluster" not in columns:
         conn.execute("ALTER TABLE servers ADD COLUMN cluster TEXT NOT NULL DEFAULT 'Default'")
+    if 'resource_id' not in columns:
+        conn.execute('ALTER TABLE servers ADD COLUMN resource_id TEXT')
+    if 'active' not in columns:
+        conn.execute('ALTER TABLE servers ADD COLUMN active INTEGER NOT NULL DEFAULT 1')
+    conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_servers_resource_id ON servers(resource_id)')
     conn.commit()
 
 
 def sync_config(conn: sqlite3.Connection, config: AppConfig) -> None:
     service_urls = [service.url for service in config.services]
-    server_targets = [server.target for server in config.servers]
+    server_targets = [server.target for server in config.all_servers]
 
     for service in config.services:
         upsert_service(conn, service)
-    for server in config.servers:
+    for server in config.all_servers:
         upsert_server(conn, server)
 
     if service_urls:
@@ -95,14 +100,15 @@ def sync_config(conn: sqlite3.Connection, config: AppConfig) -> None:
     else:
         conn.execute("DELETE FROM services")
 
-    # Discovered machines are maintained by their data source, not the static list.
-    if config.sources or config.prometheus:
-        pass
-    elif server_targets:
-        placeholders = ",".join("?" for _ in server_targets)
-        conn.execute(f"DELETE FROM servers WHERE ip NOT IN ({placeholders})", server_targets)
-    else:
-        conn.execute("DELETE FROM servers")
+    # Deactivate removed machines without deleting metrics or aggregated history.
+    # Legacy discovery remains supported until an instance switches to managed files.
+    legacy = config.prometheus or any(not source.managed for source in config.sources)
+    if not legacy:
+        if server_targets:
+            placeholders = ','.join('?' for _ in server_targets)
+            conn.execute(f'UPDATE servers SET active=0 WHERE ip NOT IN ({placeholders})',server_targets)
+        else:
+            conn.execute('UPDATE servers SET active=0')
 
     conn.commit()
 
@@ -119,14 +125,28 @@ def upsert_service(conn: sqlite3.Connection, service: ServiceConfig) -> int:
 
 
 def upsert_server(conn: sqlite3.Connection, server: ServerConfig) -> int:
-    conn.execute(
-        """
-        INSERT INTO servers(name, ip, cluster) VALUES (?, ?, ?)
-        ON CONFLICT(ip) DO UPDATE SET name = excluded.name, cluster = excluded.cluster
-        """,
-        (server.name, server.target, server.cluster),
-    )
-    return int(conn.execute("SELECT id FROM servers WHERE ip = ?", (server.target,)).fetchone()["id"])
+    identity = server.id or _identity('server', server.target)
+    row = conn.execute('SELECT id,ip FROM servers WHERE resource_id=?',(identity,)).fetchone()
+    endpoint = conn.execute('SELECT id,resource_id FROM servers WHERE ip=?',(server.target,)).fetchone()
+    if row and endpoint and row['id'] != endpoint['id']:
+        raise ValueError(f'Endpoint belongs to another machine: {server.target}')
+    if row:
+        if row['ip'] != server.target:
+            # Network counters from a previous endpoint must not be differenced.
+            conn.execute('DELETE FROM server_state WHERE server_id=?',(row['id'],))
+        conn.execute('UPDATE servers SET name=?,ip=?,cluster=?,active=1 WHERE id=?',
+                     (server.name,server.target,server.cluster,row['id']))
+        return row['id']
+    if endpoint:
+        # One-time adoption of legacy rows keeps their integer keys and all history.
+        if endpoint['resource_id'] not in (None, _identity('server',server.target)):
+            raise ValueError(f'Machine ID changed at existing endpoint: {server.target}')
+        conn.execute('UPDATE servers SET resource_id=?,name=?,cluster=?,active=1 WHERE id=?',
+                     (identity,server.name,server.cluster,endpoint['id']))
+        return endpoint['id']
+    cursor = conn.execute('INSERT INTO servers(resource_id,name,ip,cluster) VALUES (?,?,?,?)',
+                          (identity,server.name,server.target,server.cluster))
+    return cursor.lastrowid
 
 
 def recent_service_failures(conn: sqlite3.Connection, service_id: int, limit: int) -> int:

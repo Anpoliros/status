@@ -139,7 +139,7 @@ def _query_metric(source: PrometheusConfig, expression: str, timeout: float) -> 
     payload = fetch_json(_prometheus_url(source, "/api/v1/query", {"query": expression}), timeout)
     values = {}
     for item in payload.get("data", {}).get("result", []):
-        instance = item.get("metric", {}).get("instance")
+        instance = item.get("metric", {}).get("status_id" if source.managed else "instance")
         value = item.get("value", [None, None])[1]
         if instance is None:
             continue
@@ -154,34 +154,36 @@ async def collect_prometheus_servers(
     conn: sqlite3.Connection, config: AppConfig, source: PrometheusConfig
 ) -> None:
     try:
-        servers = await asyncio.to_thread(discover_prometheus_servers, source, config.request_timeout_seconds)
+        servers = list(source.servers) if source.managed else await asyncio.to_thread(discover_prometheus_servers, source, config.request_timeout_seconds)
         selector = f'job="{source.job}",{source.enabled_label}="{source.enabled_value}"'
+        group = "status_id" if source.managed else "instance"
         queries = {
             "up": f'up{{{selector}}}',
-            "cpu_usage": f'100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{{{selector},mode="idle"}}[5m])))',
+            "cpu_usage": f'100 * (1 - avg by({group}) (rate(node_cpu_seconds_total{{{selector},mode="idle"}}[5m])))',
             "memory_usage": f'100 * (1 - node_memory_MemAvailable_bytes{{{selector}}} / node_memory_MemTotal_bytes{{{selector}}})',
-            "disk_usage": f'100 * (1 - sum by(instance) (node_filesystem_avail_bytes{{{selector}}}) / sum by(instance) (node_filesystem_size_bytes{{{selector}}}))',
-            "network_in": f'sum by(instance) (rate(node_network_receive_bytes_total{{{selector}}}[1m]))',
-            "network_out": f'sum by(instance) (rate(node_network_transmit_bytes_total{{{selector}}}[1m]))',
+            "disk_usage": f'100 * (1 - sum by({group}) (node_filesystem_avail_bytes{{{selector}}}) / sum by({group}) (node_filesystem_size_bytes{{{selector}}}))',
+            "network_in": f'sum by({group}) (rate(node_network_receive_bytes_total{{{selector}}}[1m]))',
+            "network_out": f'sum by({group}) (rate(node_network_transmit_bytes_total{{{selector}}}[1m]))',
         }
         metrics = {
             name: await asyncio.to_thread(_query_metric, source, expression, config.request_timeout_seconds)
             for name, expression in queries.items()
         }
     except (TimeoutError, URLError, OSError, ValueError, json.JSONDecodeError):
-        servers = []
+        servers = list(source.servers) if source.managed else []
         metrics = {}
 
     timestamp = now_iso()
     for server in servers:
         server_id = upsert_server(conn, server)
-        up = metrics.get("up", {}).get(server.target)
+        metric_id = server.id if source.managed else server.target
+        up = metrics.get("up", {}).get(metric_id)
         if up != 1:
             values = {key: None for key in ("cpu_usage", "memory_usage", "disk_usage", "network_in", "network_out")}
         else:
-            values = {key: metrics.get(key, {}).get(server.target) for key in ("cpu_usage", "memory_usage", "disk_usage")}
-            values["network_in"] = (metrics.get("network_in", {}).get(server.target) or 0.0) * 60
-            values["network_out"] = (metrics.get("network_out", {}).get(server.target) or 0.0) * 60
+            values = {key: metrics.get(key, {}).get(metric_id) for key in ("cpu_usage", "memory_usage", "disk_usage")}
+            values["network_in"] = (metrics.get("network_in", {}).get(metric_id) or 0.0) * 60
+            values["network_out"] = (metrics.get("network_out", {}).get(metric_id) or 0.0) * 60
         conn.execute(
             """
             INSERT INTO server_metrics(

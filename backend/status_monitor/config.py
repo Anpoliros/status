@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .collectors import PrometheusConfig, load_collectors
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -31,16 +33,6 @@ class ServerConfig:
 
 
 @dataclass(frozen=True)
-class PrometheusConfig:
-    url: str
-    job: str
-    enabled_label: str = 'status_enabled'
-    enabled_value: str = 'true'
-    name_label: str = 'status_name'
-    cluster_label: str = 'cluster'
-
-
-@dataclass(frozen=True)
 class AppConfig:
     database: Path
     status_json: Path
@@ -55,6 +47,10 @@ class AppConfig:
     sources: list[PrometheusConfig] = field(default_factory=list)
     auth: dict = field(default_factory=dict)
     refresh: dict = field(default_factory=dict)
+
+    @property
+    def all_servers(self):
+        return self.servers + [server for source in self.sources for server in source.servers]
 
     @property
     def state_database(self) -> Path:
@@ -98,6 +94,8 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
             if not directory.is_dir():
                 raise ValueError(f'Resource directory does not exist: {directory}')
             for resource_path in sorted(directory.glob('*.json')):
+                if resource_path.name.endswith('.prometheus.json'):
+                    continue
                 resources.append(_expand(json.loads(resource_path.read_text()), environment))
     services, servers, sources = [], [], []
     ids, endpoints = set(), set()
@@ -120,6 +118,14 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
         if isinstance(definitions, dict):
             definitions = [definitions]
         sources.extend(PrometheusConfig(**item) for item in definitions)
+    sources.extend(load_collectors(raw.get('collectors', []), environment,
+                   lambda value: json.loads(repository_path(value).read_text())))
+    for source in sources:
+        for server in source.servers:
+            if server.id in ids or ('server', server.target) in endpoints:
+                raise ValueError(f'Duplicate resource: {server.id}')
+            ids.add(server.id)
+            endpoints.add(('server', server.target))
     refresh = {'minimum_seconds': 10, 'idle_seconds': 300, 'lease_seconds': 75,
                'presets': [10, 20, 60], **raw.get('refresh', {})}
     def integer(value, name):
