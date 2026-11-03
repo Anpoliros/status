@@ -198,7 +198,7 @@ node --test tests/status-utils.test.js
 
 主机 ID 在整个 status 实例内唯一，不包含 collector 身份；改名、换地址或换 collector 时保持 ID 即保留历史。同一地址不能同时配置两个身份。第一次迁移按旧地址认领已有数据库行，保留整数主键、原始记录和历史聚合；移除主机只停用，不删除记录。重新使用已有地址代表另一台主机时，应先显式处理旧主机的地址占用，避免误合并历史。普通直连机器也支持稳定 `id`。
 
-collector 的 `name` 和 `cluster` 在本地维护，不发送到 Prometheus；调整展示不需要下发。默认只下发 `status_id`、`status_enabled` 标签，指标查询按 `status_id` 关联。需要 Prometheus 告警按集群查询时，可开启 `export_cluster_label: true`；此时 cluster 会进入时间序列标签。旧的 `prometheus` 发现配置暂时兼容，新配置应使用 collectors。
+collector 的 `name` 和 `cluster` 在本地维护，不发送到 Prometheus；调整展示不需要下发。默认只下发 `status_id`、`status_enabled` 标签，指标查询按 `status_id` 关联。CPU 与网络速率采用 5 分钟范围计算，确保 60 秒采集周期下有足够样本；新标签首次生效时需至少两轮采集。需要 Prometheus 告警按集群查询时，可开启 `export_cluster_label: true`；此时 cluster 会进入时间序列标签。旧的 `prometheus` 发现配置暂时兼容，新配置应使用 collectors。
 
 首次需要在远端的对应 scrape job 使用 `file_sd_configs` 指向 `target_file`，保留原有 scrape interval、relabeling 等设置并校验、重载一次。以后只更新 JSON 清单，Prometheus 文件监视会自动应用，无需重启或重载。远端为 Docker 部署时应挂载目标目录，保证原子替换对容器可见。
 

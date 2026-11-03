@@ -26,4 +26,5 @@ class ManagedCollectionTests(unittest.TestCase):
         self.assertEqual((row['resource_id'],row['name'],row['cluster']),('ali-ecs-142','142','local-cluster'))
         self.assertEqual(fixture.connection.execute('SELECT cpu_usage FROM server_metrics').fetchone()[0],25)
         self.assertTrue(any('by(status_id)' in expression for expression in expressions))
+        self.assertTrue(all('[5m]' in expression for expression in expressions if 'node_network_' in expression))
         fixture.tearDown()

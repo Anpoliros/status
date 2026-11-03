@@ -157,13 +157,14 @@ async def collect_prometheus_servers(
         servers = list(source.servers) if source.managed else await asyncio.to_thread(discover_prometheus_servers, source, config.request_timeout_seconds)
         selector = f'job="{source.job}",{source.enabled_label}="{source.enabled_value}"'
         group = "status_id" if source.managed else "instance"
+        # A 60s scrape interval needs a wider range than 1m for two rate samples.
         queries = {
             "up": f'up{{{selector}}}',
             "cpu_usage": f'100 * (1 - avg by({group}) (rate(node_cpu_seconds_total{{{selector},mode="idle"}}[5m])))',
             "memory_usage": f'100 * (1 - node_memory_MemAvailable_bytes{{{selector}}} / node_memory_MemTotal_bytes{{{selector}}})',
             "disk_usage": f'100 * (1 - sum by({group}) (node_filesystem_avail_bytes{{{selector}}}) / sum by({group}) (node_filesystem_size_bytes{{{selector}}}))',
-            "network_in": f'sum by({group}) (rate(node_network_receive_bytes_total{{{selector}}}[1m]))',
-            "network_out": f'sum by({group}) (rate(node_network_transmit_bytes_total{{{selector}}}[1m]))',
+            "network_in": f'sum by({group}) (rate(node_network_receive_bytes_total{{{selector}}}[5m]))',
+            "network_out": f'sum by({group}) (rate(node_network_transmit_bytes_total{{{selector}}}[5m]))',
         }
         metrics = {
             name: await asyncio.to_thread(_query_metric, source, expression, config.request_timeout_seconds)
