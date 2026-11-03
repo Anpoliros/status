@@ -163,3 +163,61 @@ node --test tests/status-utils.test.js
 ```
 
 部署后确认两个健康接口、匿名服务历史、受保护路径、本地备用登录、OIDC 跳转以及采集节奏。所有秘密与运行数据均不提交。
+
+## 本地管理 Prometheus 主机与下发
+
+在 general 中使用 `collectors` 声明 Prometheus 来源：
+
+```json
+{
+  "collectors": [
+    {
+      "type": "prometheus",
+      "id": "prometheus-ali-150",
+      "url": "http://100.123.29.123:9090",
+      "job": "pusr-node",
+      "file": "configs-pusr/resources/ali.prometheus.json",
+      "deploy": {
+        "ssh_host": "ali-150-root",
+        "target_file": "/etc/prometheus/targets/pusr-node.json"
+      }
+    }
+  ]
+}
+```
+
+`file` 支持绝对路径或仓库根目录相对路径。`.prometheus.json` 由 collector 专门加载，resource 目录扫描跳过它，避免重复直连采集。每个文件结构如下：
+
+```json
+{
+  "servers": [
+    { "id": "ali-ecs-142", "name": "142", "target": "10.1.2.142:9100", "cluster": "dgroup" }
+  ]
+}
+```
+
+主机 ID 在整个 status 实例内唯一，不包含 collector 身份；改名、换地址或换 collector 时保持 ID 即保留历史。同一地址不能同时配置两个身份。第一次迁移按旧地址认领已有数据库行，保留整数主键、原始记录和历史聚合；移除主机只停用，不删除记录。重新使用已有地址代表另一台主机时，应先显式处理旧主机的地址占用，避免误合并历史。普通直连机器也支持稳定 `id`。
+
+collector 的 `name` 和 `cluster` 在本地维护，不发送到 Prometheus；调整展示不需要下发。默认只下发 `status_id`、`status_enabled` 标签，指标查询按 `status_id` 关联。需要 Prometheus 告警按集群查询时，可开启 `export_cluster_label: true`；此时 cluster 会进入时间序列标签。旧的 `prometheus` 发现配置暂时兼容，新配置应使用 collectors。
+
+首次需要在远端的对应 scrape job 使用 `file_sd_configs` 指向 `target_file`，保留原有 scrape interval、relabeling 等设置并校验、重载一次。以后只更新 JSON 清单，Prometheus 文件监视会自动应用，无需重启或重载。远端为 Docker 部署时应挂载目标目录，保证原子替换对容器可见。
+
+本地应准备与远端版本一致的 `promtool`（生产当前为 `data/tools/promtool-ali-150`，工具不提交）：
+
+```bash
+# 默认预览；完成本地校验、版本匹配检查，并显示远端差异。
+.venv/bin/python configs/scripts/deploy-prometheus.py \
+  --config configs-pusr/general.json --collector prometheus-ali-150 \
+  --promtool data/tools/promtool-ali-150 --dry-run
+
+# 校验后下发，并验证 Prometheus targets API 的 ID 与地址。
+.venv/bin/python configs/scripts/deploy-prometheus.py \
+  --config configs-pusr/general.json --collector prometheus-ali-150 \
+  --promtool data/tools/promtool-ali-150 --apply
+```
+
+脚本使用 SSH 别名的认证，不在配置里保存 SSH 密钥。目标清单先通过本地结构校验与同版本 promtool 校验，上传后再次使用远端 promtool 校验临时清单及主配置，取得文件锁并检查远端内容未被其他部署修改，最后原子替换。已有文件保存在同目录 `.previous`，必要时将备份原子恢复即可。清空全部目标需要显式传入 `--allow-empty`。
+
+`--dry-run` 不写远端文件；`--apply` 不重载主配置。下发只修改指定 File SD 文件，不覆盖其他 jobs。目标离线会报告，但不自动回滚整份清单；目标及标签发现不匹配则命令失败，保留备份供排查。Prometheus 2.31 不提供 `promtool check service-discovery`，因此使用受支持的 `check config` 验证包装配置，再通过运行中的 targets API 验证实际发现结果。
+
+本地配置修改后还需重启相应 status worker/API，读取新的名称、分组与清单。服务身份机制本次保持不变。

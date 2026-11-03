@@ -1,0 +1,10 @@
+{
+  "servers": [
+    {
+      "id": "ali-ecs-142",
+      "name": "142",
+      "target": "10.1.2.142:9100",
+      "cluster": "dgroup"
+    }
+  ]
+}
