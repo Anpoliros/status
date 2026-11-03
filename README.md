@@ -218,6 +218,6 @@ collector 的 `name` 和 `cluster` 在本地维护，不发送到 Prometheus；�
 
 脚本使用 SSH 别名的认证，不在配置里保存 SSH 密钥。目标清单先通过本地结构校验与同版本 promtool 校验，上传后再次使用远端 promtool 校验临时清单及主配置，取得文件锁并检查远端内容未被其他部署修改，最后原子替换。已有文件保存在同目录 `.previous`，必要时将备份原子恢复即可。清空全部目标需要显式传入 `--allow-empty`。
 
-`--dry-run` 不写远端文件；`--apply` 不重载主配置。下发只修改指定 File SD 文件，不覆盖其他 jobs。目标离线会报告，但不自动回滚整份清单；目标及标签发现不匹配则命令失败，保留备份供排查。Prometheus 2.31 不提供 `promtool check service-discovery`，因此使用受支持的 `check config` 验证包装配置，再通过运行中的 targets API 验证实际发现结果。
+`--dry-run` 不写远端文件；`--apply` 不重载主配置。下发只修改指定 File SD 文件，不覆盖其他 jobs。目标离线会报告，但不自动回滚整份清单；目标及标签发现不匹配则命令失败，保留备份供排查。Prometheus 2.31 不提供 `promtool check service-discovery`，而旧版 `check config` 不会深入校验 File SD 内容，因此包装配置同时将生成结果作为 `static_configs` 交给 promtool 校验，再通过运行中的 targets API 验证实际发现结果。
 
 本地配置修改后还需重启相应 status worker/API，读取新的名称、分组与清单。服务身份机制本次保持不变。

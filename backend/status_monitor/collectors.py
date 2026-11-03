@@ -49,7 +49,7 @@ class PrometheusConfig:
 def load_collectors(definitions, environment, read_json):
     # Import lazily to keep the shared resource types in config.py.
     from .config import ServerConfig, _expand
-    sources, collector_ids = [], set()
+    sources, collector_ids, jobs, destinations = [], set(), set(), set()
     for item in definitions:
         if item.get('type') != 'prometheus':
             raise ValueError('Unsupported collector type')
@@ -64,6 +64,10 @@ def load_collectors(definitions, environment, read_json):
             raise ValueError('Collector URL must be HTTP(S)')
         if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]*',item['job']):
             raise ValueError('Invalid job name')
+        job_key = (item['url'].rstrip('/'), item['job'])
+        if job_key in jobs:
+            raise ValueError('Each Prometheus job must have exactly one managed collector')
+        jobs.add(job_key)
         if not item['file'].endswith('.prometheus.json'):
             raise ValueError('Collector file must end in .prometheus.json')
         content = _expand(read_json(item['file']),environment)
@@ -88,6 +92,10 @@ def load_collectors(definitions, environment, read_json):
             if set(deploy)-{'ssh_host','target_file','promtool','config_file'}:
                 raise ValueError('Unknown deployment fields')
             identifier(deploy['ssh_host'],'SSH host alias')
+            destination = (deploy['ssh_host'], deploy['target_file'])
+            if destination in destinations:
+                raise ValueError('Collectors must not overwrite the same destination file')
+            destinations.add(destination)
             path = deploy['target_file']
             if not path.startswith('/') or not path.endswith('.json') or '\n' in path or '..' in path.split('/'):
                 raise ValueError('Deployment target must be an absolute JSON path')

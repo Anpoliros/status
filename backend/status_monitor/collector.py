@@ -182,8 +182,10 @@ async def collect_prometheus_servers(
             values = {key: None for key in ("cpu_usage", "memory_usage", "disk_usage", "network_in", "network_out")}
         else:
             values = {key: metrics.get(key, {}).get(metric_id) for key in ("cpu_usage", "memory_usage", "disk_usage")}
-            values["network_in"] = (metrics.get("network_in", {}).get(metric_id) or 0.0) * 60
-            values["network_out"] = (metrics.get("network_out", {}).get(metric_id) or 0.0) * 60
+            # A newly labeled counter needs two scrapes before rate() exists.
+            for direction in ("network_in", "network_out"):
+                rate = metrics.get(direction, {}).get(metric_id)
+                values[direction] = None if rate is None else rate * 60
         conn.execute(
             """
             INSERT INTO server_metrics(

@@ -37,7 +37,7 @@ try:
  # Promtool validates the actual staged file through a temporary scrape config.
  with tempfile.TemporaryDirectory() as directory:
   wrapper=Path(directory)/'check.yml'
-  wrapper.write_text('scrape_configs:\n  - job_name: '+json.dumps(p['job'])+'\n    file_sd_configs:\n      - files: ['+json.dumps(temporary)+']\n')
+  wrapper.write_text('scrape_configs:\n  - job_name: '+json.dumps(p['job'])+'\n    static_configs: '+json.dumps(json.loads(content))+'\n    file_sd_configs:\n      - files: ['+json.dumps(temporary)+']\n')
   subprocess.run([p['promtool'],'check','config',str(wrapper)],check=True,stdout=sys.stderr)
   subprocess.run([p['promtool'],'check','config',p['config_file']],check=True,stdout=sys.stderr)
  if current is not None: shutil.copy2(target,backup)
@@ -76,7 +76,7 @@ def validate(source, tool):
         target.write_text(json.dumps(file_sd(source)))
         wrapper = Path(directory)/'check.yml'
         wrapper.write_text('scrape_configs:\n  - job_name: '+json.dumps(source.job)+
-                           '\n    file_sd_configs:\n      - files: ['+json.dumps(str(target))+']\n')
+                           '\n    static_configs: '+json.dumps(file_sd(source))+'\n    file_sd_configs:\n      - files: ['+json.dumps(str(target))+']\n')
         result = run([str(tool),'check','config',str(wrapper)])
         print(result.stdout.strip())
 
