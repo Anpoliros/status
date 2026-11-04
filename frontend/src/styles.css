@@ -130,3 +130,10 @@ button:disabled { opacity: .45; cursor: default; }
 .filterClusterTitle strong { flex: 1; }
 .filterCluster.dragging { background: var(--surface); outline: 1px solid var(--border); border-radius: 7px; }
 .filterCluster.dragging .filterClusterTitle { cursor: grabbing; }
+
+/* Stable insertion markers avoid moving the drag target beneath the pointer. */
+.filterCluster { position: relative; }
+.filterCluster.dropBefore::before, .filterCluster.dropAfter::after { content: ''; position: absolute; left: 0; right: 0; height: 3px; background: var(--foreground); border-radius: 3px; pointer-events: none; }
+.filterCluster.dropBefore::before { top: -2px; }
+.filterCluster.dropAfter::after { bottom: -2px; }
+.clusterDragHandle { display: inline-flex; padding: 8px; color: var(--muted); }

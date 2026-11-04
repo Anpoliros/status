@@ -5,7 +5,7 @@ import { post } from './api.js';
 
 const TABS = ['Filter', 'Display', 'Account', 'Control'];
 
-export function SettingsMenu({ open, onClose, filterItems, filters, setFilters, filterScope, preferences, setPreferences, session, reloadSession, presets, setPresets, seconds, automatic, setAutomatic, control, generatedAt }) {
+export function SettingsMenu({ open, onClose, filterItems, filters, setFilters, setClusterOrder, filterScope, preferences, setPreferences, session, reloadSession, presets, setPresets, seconds, automatic, setAutomatic, control, generatedAt }) {
   const [tab, setTab] = useState('Filter');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,7 +43,7 @@ export function SettingsMenu({ open, onClose, filterItems, filters, setFilters, 
       }}>{name}</button>)}
     </div>
     <div id="settings-content" className="settingsContent" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-      {tab === 'Filter' && <ResourceFilter key={filterScope} items={filterItems} filters={filters} setFilters={setFilters} scope={filterScope} />}
+      {tab === 'Filter' && <ResourceFilter key={filterScope} items={filterItems} filters={filters} setFilters={setFilters} setClusterOrder={setClusterOrder} scope={filterScope} />}
       {tab === 'Display' && <>
         <label className="settingRow">Sort by<select value={preferences.sort} onChange={event => change('sort', event.target.value)}><option value="config">Configured order</option><option value="name">Name</option><option value="status">Status</option><option value="cpu_usage">CPU</option><option value="memory_usage">Memory</option><option value="disk_usage">Disk</option></select></label>
         <label className="settingRow">Layout<select value={preferences.layout} onChange={event => change('layout', event.target.value)}><option value="list">List</option><option value="grid">Grid</option></select></label>

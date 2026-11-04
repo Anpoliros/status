@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Moon, Monitor, RefreshCcw, Settings2, Sun } from 'lucide-react';
 import { readPreference } from './api.js';
-import { resourceKey } from './ResourceFilter.jsx';
+import { orderedClusters, resourceKey } from './ResourceFilter.jsx';
 import { SettingsMenu } from './SettingsMenu.jsx';
 import { EmptyState, HistoryView, MachinesView, ServicesView } from './Views.jsx';
 import { useDashboard } from './useDashboard.js';
@@ -29,6 +29,10 @@ function App() {
       hiddenClusters: legacy.hiddenClusters || [], hiddenMachines: legacy.hiddenMachines || [],
     } });
   });
+  const [clusterOrders, setClusterOrders] = useState(() => readPreference('cluster-orders', {
+    machines: filterSettings['status-machines']?.clusterOrder || filterSettings['history-machines']?.clusterOrder || [],
+    services: filterSettings['status-services']?.clusterOrder || filterSettings['history-services']?.clusterOrder || [],
+  }));
   const [presets, setPresets] = useState(() => readPreference('refresh-presets', [10, 20, 60]));
   const [selectedPreset, setSelectedPreset] = useState(() => readPreference('refresh-selected', 2));
   const [automatic, setAutomatic] = useState(() => readPreference('automatic', true));
@@ -37,7 +41,13 @@ function App() {
   const dashboard = useDashboard({ resourceView, mode, range, seconds, automatic });
   const { session, status, history, loading, updating, error } = dashboard;
   const filterScope = `${dashboard.mode}-${dashboard.resourceView}`;
-  const filters = { ...DEFAULT_FILTER, ...filterSettings[filterScope] };
+  // Cluster positions are shared between modes; selections remain scope-local.
+  const configuredItems = status?.[dashboard.resourceView === 'machines' ? 'servers' : 'services'] || history?.items || [];
+  const filters = { ...DEFAULT_FILTER, ...filterSettings[filterScope],
+    clusterOrder: orderedClusters(configuredItems, clusterOrders[dashboard.resourceView] || []),
+  };
+  const setClusterOrder = order => setClusterOrders(previous => ({ ...previous, [dashboard.resourceView]: order }));
+  useEffect(() => { localStorage.setItem('status-cluster-orders', JSON.stringify(clusterOrders)); }, [clusterOrders]);
   const setFilters = update => setFilterSettings(previous => ({ ...previous, [filterScope]: typeof update === 'function' ? update({ ...DEFAULT_FILTER, ...previous[filterScope] }) : update }));
   useEffect(() => { localStorage.setItem('status-filters', JSON.stringify(filterSettings)); }, [filterSettings]);
   const full = Boolean(session?.full_access);
@@ -90,7 +100,7 @@ function App() {
         <ThemeSwitch theme={theme} setTheme={setTheme} />
       </div>
     </header>
-    <SettingsMenu open={menuOpen} onClose={closeMenu} filterItems={dashboard.mode === 'history' ? history?.items || [] : status?.[dashboard.resourceView === 'machines' ? 'servers' : 'services'] || []} filters={filters} setFilters={setFilters} filterScope={filterScope} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={updatedAt} />
+    <SettingsMenu open={menuOpen} onClose={closeMenu} filterItems={dashboard.mode === 'history' ? history?.items || [] : status?.[dashboard.resourceView === 'machines' ? 'servers' : 'services'] || []} filters={filters} setFilters={setFilters} setClusterOrder={setClusterOrder} filterScope={filterScope} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={updatedAt} />
     {loginError && !session?.user && <div className="notice">Shizunet login could not be completed. You can retry or use the local account in Account.</div>}
     {error && <div className="notice" role="alert">{error}{currentData && ' — showing the last available data.'}</div>}
     {dashboard.control?.clamped && <div className="notice" role="status">Requested {seconds}s; the server minimum is {dashboard.control.minimum_seconds}s.</div>}
