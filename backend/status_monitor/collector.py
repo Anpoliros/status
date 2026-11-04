@@ -8,7 +8,7 @@ import time
 from datetime import UTC, datetime
 from urllib.error import URLError
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import ProxyHandler, Request, build_opener, urlopen
 
 from .config import AppConfig, PrometheusConfig, ServerConfig, ServiceConfig
 from .db import (
@@ -19,6 +19,7 @@ from .db import (
     upsert_server,
     upsert_service,
 )
+from .ssh_transport import collection_url
 from .node_exporter import extract_node_metrics
 
 
@@ -26,9 +27,10 @@ def now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def fetch_text(url: str, timeout: float) -> tuple[int, bytes]:
+def fetch_text(url: str, timeout: float, local: bool = False) -> tuple[int, bytes]:
     request = Request(url, headers={"User-Agent": "status-monitor/1.0"})
-    with urlopen(request, timeout=timeout) as response:
+    open_url = build_opener(ProxyHandler({})).open if local else urlopen
+    with open_url(request, timeout=timeout) as response:
         return response.status, response.read()
 
 
@@ -71,10 +73,10 @@ async def check_service(conn: sqlite3.Connection, config: AppConfig, service: Se
 
 async def collect_server(conn: sqlite3.Connection, config: AppConfig, server: ServerConfig) -> None:
     server_id = upsert_server(conn, server)
-    url = server.target if server.target.startswith(("http://", "https://")) else f"http://{server.target}/metrics"
+    url = collection_url(server.target, server.transport)
     timestamp = now_iso()
     try:
-        status_code, body = await asyncio.to_thread(fetch_text, url, config.request_timeout_seconds)
+        status_code, body = await asyncio.to_thread(fetch_text, url, config.request_timeout_seconds, local=server.transport is not None)
         metrics = extract_node_metrics(body.decode("utf-8", errors="replace")) if status_code == 200 else {}
     except (TimeoutError, URLError, OSError):
         metrics = {}

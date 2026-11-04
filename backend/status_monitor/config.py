@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .ssh_transport import SSHTransport, load_transport
 from .collectors import PrometheusConfig, load_collectors
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +31,7 @@ class ServerConfig:
     cluster: str = 'Default'
     id: str = ''
     order: int = 0
+    transport: SSHTransport | None = None
 
 
 @dataclass(frozen=True)
@@ -98,7 +100,7 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
                     continue
                 resources.append(_expand(json.loads(resource_path.read_text()), environment))
     services, servers, sources = [], [], []
-    ids, endpoints = set(), set()
+    ids, endpoints, tunnel_ports = set(), set(), set()
     for resource in resources:
         for kind, target_list, endpoint_key in [('service', services, 'url'), ('server', servers, 'target')]:
             for item in resource.get('services' if kind == 'service' else 'servers', []):
@@ -112,8 +114,18 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
                     raise ValueError(f'Duplicate resource: {identity}')
                 ids.add(identity)
                 endpoints.add((kind, endpoint))
+                options = {}
+                if 'transport' in item:
+                    if kind != 'server' or not item.get('id'):
+                        raise ValueError('SSH transport requires a server with an explicit stable id')
+                    transport = load_transport(item['transport'], endpoint, identity, str(config_path.resolve()))
+                    if transport:
+                        if transport.local_port in tunnel_ports:
+                            raise ValueError(f'Duplicate SSH local port: {transport.local_port}')
+                        tunnel_ports.add(transport.local_port)
+                    options['transport'] = transport
                 target_list.append((ServiceConfig if kind == 'service' else ServerConfig)(
-                    str(item.get('name') or endpoint), endpoint, str(item.get('cluster') or 'Default'), identity, int(item.get('order', 0))))
+                    str(item.get('name') or endpoint), endpoint, str(item.get('cluster') or 'Default'), identity, int(item.get('order', 0)), **options))
         definitions = resource.get('prometheus', [])
         if isinstance(definitions, dict):
             definitions = [definitions]

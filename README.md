@@ -221,3 +221,48 @@ collector 的 `name` 和 `cluster` 在本地维护，不发送到 Prometheus；�
 `--dry-run` 不写远端文件；`--apply` 不重载主配置。下发只修改指定 File SD 文件，不覆盖其他 jobs。目标离线会报告，但不自动回滚整份清单；目标及标签发现不匹配则命令失败，保留备份供排查。Prometheus 2.31 不提供 `promtool check service-discovery`，而旧版 `check config` 不会深入校验 File SD 内容，因此包装配置同时将生成结果作为 `static_configs` 交给 promtool 校验，再通过运行中的 targets API 验证实际发现结果。
 
 本地配置修改后还需重启相应 status worker/API，读取新的名称、分组与清单。服务身份机制本次保持不变。
+
+### 可选的 SSH 隧道采集
+
+直连 Node Exporter 和 Prometheus 的配置与采集方式保持原样。仅在普通 `servers` 条目显式声明 `transport` 时，才通过 SSH 隧道访问 exporter：
+
+```json
+{
+  "servers": [
+    {
+      "id": "mml",
+      "name": "mml",
+      "cluster": "x2",
+      "target": "10.176.46.12:9100",
+      "transport": { "type": "ssh", "host": "mml-ranges-jump" }
+    }
+  ]
+}
+```
+
+`host` 是运行 status 用户的 `~/.ssh/config` 别名，可继续配置 `ProxyJump`、用户名、密钥与 known_hosts。需要提前确认非交互 SSH 登录和主机密钥验证正常。SSH transport 要求显式稳定 `id`；数据库始终保留原始 `target` 和 ID，切换传输不会新建主机或丢失历史。
+
+`target` 是 SSH 目标机视角下的 HTTP exporter 地址，必须与 exporter 实际监听地址对应；可使用完整 HTTP URL 保留路径和查询参数。当前 SSH transport 不支持 HTTPS；原有直连 HTTPS 不受影响。
+
+```bash
+# 默认仅校验 SSH 配置、生成的 systemd unit，不连接远端、不安装服务。
+.venv/bin/python configs/scripts/deploy-ssh.py --config configs-pusr/general.json --check
+
+# 安装/更新此实例的 systemd 用户服务，并实际探测 exporter 指标。
+.venv/bin/python configs/scripts/deploy-ssh.py --config configs-pusr/general.json --apply
+
+# 停止并移除此配置路径对应的全部隧道。
+.venv/bin/python configs/scripts/deploy-ssh.py --config configs-pusr/general.json --remove
+```
+
+隧道独立于采集周期常驻，由 systemd 自动重启，SSH 心跳检测断线。本地端口仅监听 `127.0.0.1`，自动根据配置文件绝对路径和主机 ID 生成，也可在 transport 中指定 `local_port`（1024–65535）；本实例重复端口会在加载配置时报错。跨实例或其他进程占用端口时，隧道启动失败，可改用显式端口。配置路径移动或变更 ID 前，先使用旧配置执行 `--remove`，避免遗留服务。
+
+首次部署需确保用户 systemd 可用，并运行 `loginctl enable-linger 用户名`，让用户服务开机启动且退出 SSH 后继续运行。脚本生成的 unit 名称可用于 `systemctl --user status UNIT` 和 `journalctl --user -u UNIT`。脚本只管理所选配置路径对应的 unit；`--apply` 会清理该实例已经移除的隧道。探测失败时命令报错，保留服务供重连和排查。
+
+启用时先执行隧道 `--apply`，然后重启对应 status worker/API。恢复直连时，删除 transport 并重启对应实例，再执行 `--apply` 清理旧隧道。采集失败会按原有逻辑写入缺失测量，不把旧值伪装成新值；采集器不会按浏览器请求创建 SSH 连接。
+
+### 筛选与排序
+
+集群顺序默认遵循资源配置；Filter 与页面使用同一顺序。点击集群标题折叠，长按标题或直接拖动右侧手柄可排序；拖动时显示插入位置，松手后保存，并支持滚动菜单。键盘聚焦标题后可用 Alt + 上/下箭头调整顺序。
+
+Status 与 History 共享同一资源类型的集群顺序，各自保留筛选和折叠状态；机器与服务设置分开保存。Name、CPU 等显示排序只影响集群内部的机器，不会改变集群排列。上述设置保存在当前浏览器。
