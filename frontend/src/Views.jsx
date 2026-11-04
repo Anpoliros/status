@@ -1,12 +1,13 @@
 /** @file Views.jsx @description Machine, service and pre-aggregated history presentation. */
 import React from 'react';
 import { CheckCircle2, LayoutGrid, List, WifiOff } from 'lucide-react';
+import { orderedClusters, resourceKey } from './ResourceFilter.jsx';
 import { MachineCard } from './MachineCard.jsx';
 
 export function EmptyState({ label }) { return <div className="empty">{label}</div>; }
 
-export function MachinesView({ servers, preferences, setPreferences }) {
-  const clusters = [...new Set(servers.map(server => server.cluster || 'Default'))];
+export function MachinesView({ servers, preferences, setPreferences, filters }) {
+  const clusters = orderedClusters(servers, filters.clusterOrder);
   return <>{clusters.map(cluster => {
     const items = servers.filter(server => (server.cluster || 'Default') === cluster);
     return <div className="clusterBlock" key={cluster}>
@@ -18,15 +19,20 @@ export function MachinesView({ servers, preferences, setPreferences }) {
   })}{!servers.length && <EmptyState label="No machines match the current filters" />}</>;
 }
 
-export function ServicesView({ services }) {
-  return <section className="contentCard"><div className="serviceList">{services.map(service => {
+export function ServicesView({ services, filters }) {
+  const clusters = orderedClusters(services, filters.clusterOrder);
+  const visible = services.filter(item => !filters.hiddenClusters.includes(item.cluster || 'Default') && !filters.hiddenMachines.includes(resourceKey(item)));
+  visible.sort((a, b) => clusters.indexOf(a.cluster || 'Default') - clusters.indexOf(b.cluster || 'Default'));
+  return <section className="contentCard"><div className="serviceList">{visible.map(service => {
     const level = service.status === 'up' ? 'healthy' : service.status === 'down' ? 'critical' : 'missing';
     return <article className="serviceCard" key={service.id}><div className="serviceIdentity"><span className={`statusDot ${level}`} /><div><h3>{service.name}</h3><p>{service.url}</p></div></div><div className="serviceMetric">{level === 'healthy' ? <CheckCircle2 size={15} /> : <WifiOff size={15} />}<span>{service.latency_ms == null ? service.status === 'down' ? 'Down' : 'No measurement' : `${service.latency_ms} ms`}</span></div></article>;
-  })}{!services.length && <EmptyState label="No services configured" />}</div></section>;
+  })}{!visible.length && <EmptyState label="No services match the current filters" />}</div></section>;
 }
 
-export function HistoryView({ history, range, setRange, resourceView, preferences }) {
-  const items = (history?.items || []).filter(item => resourceView === 'services' || (!preferences.hiddenClusters.includes(item.cluster || 'Default') && !preferences.hiddenMachines.includes(item.resource_id)));
+export function HistoryView({ history, range, setRange, resourceView, filters }) {
+  const items = (history?.items || []).filter(item => !filters.hiddenClusters.includes(item.cluster || 'Default') && !filters.hiddenMachines.includes(resourceKey(item)));
+  const clusters = orderedClusters(items, filters.clusterOrder);
+  items.sort((a, b) => clusters.indexOf(a.cluster || 'Default') - clusters.indexOf(b.cluster || 'Default'));
   return <section className="contentCard"><div className="historyControls"><div className="segmented"><button className={range === '60d' ? 'selected' : ''} onClick={() => setRange('60d')}>60 days</button><button className={range === '48h' ? 'selected' : ''} onClick={() => setRange('48h')}>48 hours</button></div></div>
     <div className="historySection"><h2>{resourceView === 'services' ? 'Services' : 'Machines'}</h2><div className="historyList">{items.map(item => <HistoryRow key={item.id} item={item} range={range} />)}{!items.length && <EmptyState label="No history available" />}</div></div>
   </section>;

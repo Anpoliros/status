@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Moon, Monitor, RefreshCcw, Settings2, Sun } from 'lucide-react';
 import { readPreference } from './api.js';
+import { resourceKey } from './ResourceFilter.jsx';
 import { SettingsMenu } from './SettingsMenu.jsx';
 import { EmptyState, HistoryView, MachinesView, ServicesView } from './Views.jsx';
 import { useDashboard } from './useDashboard.js';
@@ -13,12 +14,21 @@ import './styles.css';
 
 const DEFAULT_DISPLAY = { hiddenClusters: [], hiddenMachines: [], sort: 'config', layout: 'list', width: '1220', columns: 3 };
 
+const DEFAULT_FILTER = { hiddenClusters: [], hiddenMachines: [], collapsedClusters: [], clusterOrder: [] };
+
 function App() {
   const [resourceView, setResourceView] = useState('machines');
   const [mode, setMode] = useState('status');
   const [range, setRange] = useState('60d');
   const [menuOpen, setMenuOpen] = useState(false);
   const [preferences, setPreferences] = useState(() => ({ ...DEFAULT_DISPLAY, ...readPreference('display', {}) }));
+  const [filterSettings, setFilterSettings] = useState(() => {
+    // Preserve existing Status machine selections when upgrading local settings.
+    const legacy = readPreference('display', {});
+    return readPreference('filters', { 'status-machines': {
+      hiddenClusters: legacy.hiddenClusters || [], hiddenMachines: legacy.hiddenMachines || [],
+    } });
+  });
   const [presets, setPresets] = useState(() => readPreference('refresh-presets', [10, 20, 60]));
   const [selectedPreset, setSelectedPreset] = useState(() => readPreference('refresh-selected', 2));
   const [automatic, setAutomatic] = useState(() => readPreference('automatic', true));
@@ -26,6 +36,10 @@ function App() {
   const seconds = presets[selectedPreset] || 60;
   const dashboard = useDashboard({ resourceView, mode, range, seconds, automatic });
   const { session, status, history, loading, updating, error } = dashboard;
+  const filterScope = `${dashboard.mode}-${dashboard.resourceView}`;
+  const filters = { ...DEFAULT_FILTER, ...filterSettings[filterScope] };
+  const setFilters = update => setFilterSettings(previous => ({ ...previous, [filterScope]: typeof update === 'function' ? update({ ...DEFAULT_FILTER, ...previous[filterScope] }) : update }));
+  useEffect(() => { localStorage.setItem('status-filters', JSON.stringify(filterSettings)); }, [filterSettings]);
   const full = Boolean(session?.full_access);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -52,13 +66,13 @@ function App() {
   }, [theme]);
 
   const machines = useMemo(() => {
-    const visible = (status?.servers || []).filter(server => !preferences.hiddenClusters.includes(server.cluster || 'Default') && !preferences.hiddenMachines.includes(server.resource_id));
+    const visible = (status?.servers || []).filter(server => !filters.hiddenClusters.includes(server.cluster || 'Default') && !filters.hiddenMachines.includes(resourceKey(server)));
     const priority = { critical: 0, warning: 1, unknown: 2, healthy: 3 };
     if (preferences.sort === 'name') visible.sort((a, b) => a.name.localeCompare(b.name));
     else if (preferences.sort === 'status') visible.sort((a, b) => (priority[a.status] ?? 2) - (priority[b.status] ?? 2));
     else if (preferences.sort !== 'config') visible.sort((a, b) => (b[preferences.sort] ?? -1) - (a[preferences.sort] ?? -1));
     return visible;
-  }, [status, preferences]);
+  }, [status, preferences, filterSettings, filterScope]);
   const currentData = dashboard.mode === 'history' ? history : status;
   const updatedAt = dashboard.mode === 'history' ? history?.collected_at : status?.collected_at?.[dashboard.resourceView === 'machines' ? 'servers' : 'services'];
   const loginError = new window.URLSearchParams(window.location.search).has('login_error');
@@ -76,15 +90,15 @@ function App() {
         <ThemeSwitch theme={theme} setTheme={setTheme} />
       </div>
     </header>
-    <SettingsMenu open={menuOpen} onClose={closeMenu} machines={status?.servers || []} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={updatedAt} />
+    <SettingsMenu open={menuOpen} onClose={closeMenu} filterItems={dashboard.mode === 'history' ? history?.items || [] : status?.[dashboard.resourceView === 'machines' ? 'servers' : 'services'] || []} filters={filters} setFilters={setFilters} filterScope={filterScope} preferences={preferences} setPreferences={setPreferences} session={session} reloadSession={dashboard.loadSession} presets={presets} setPresets={updatePresets} seconds={seconds} automatic={automatic} setAutomatic={setAutomatic} control={dashboard.control} generatedAt={updatedAt} />
     {loginError && !session?.user && <div className="notice">Shizunet login could not be completed. You can retry or use the local account in Account.</div>}
     {error && <div className="notice" role="alert">{error}{currentData && ' — showing the last available data.'}</div>}
     {dashboard.control?.clamped && <div className="notice" role="status">Requested {seconds}s; the server minimum is {dashboard.control.minimum_seconds}s.</div>}
     {updating && <div className="notice" role="status">Updating data… Existing measurements remain visible.</div>}
     {(loading && !currentData) ? <div className="loadingState" role="status"><span className="loadingPulse" />Loading {dashboard.mode === 'history' ? 'history' : 'current status'}…</div> : !currentData ? <EmptyState label={error ? 'Unable to load data. Use Refresh to retry.' : 'Waiting for the first collection'} /> : <>
-      {dashboard.mode === 'status' && dashboard.resourceView === 'machines' && <MachinesView servers={machines} preferences={preferences} setPreferences={setPreferences} />}
-      {dashboard.mode === 'status' && dashboard.resourceView === 'services' && <ServicesView services={status.services} />}
-      {dashboard.mode === 'history' && <HistoryView history={history} range={range} setRange={setRange} resourceView={dashboard.resourceView} preferences={preferences} />}
+      {dashboard.mode === 'status' && dashboard.resourceView === 'machines' && <MachinesView filters={filters} servers={machines} preferences={preferences} setPreferences={setPreferences} />}
+      {dashboard.mode === 'status' && dashboard.resourceView === 'services' && <ServicesView filters={filters} services={status.services} />}
+      {dashboard.mode === 'history' && <HistoryView filters={filters} history={history} range={range} setRange={setRange} resourceView={dashboard.resourceView} preferences={preferences} />}
     </>}
   </main>;
 }

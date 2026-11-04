@@ -1,17 +1,16 @@
 /** @file SettingsMenu.jsx @description Status-native Filter, Display, Account and Control panels. */
 import React, { useEffect, useRef, useState } from 'react';
+import { ResourceFilter } from './ResourceFilter.jsx';
 import { post } from './api.js';
 
 const TABS = ['Filter', 'Display', 'Account', 'Control'];
 
-export function SettingsMenu({ open, onClose, machines, preferences, setPreferences, session, reloadSession, presets, setPresets, seconds, automatic, setAutomatic, control, generatedAt }) {
+export function SettingsMenu({ open, onClose, filterItems, filters, setFilters, filterScope, preferences, setPreferences, session, reloadSession, presets, setPresets, seconds, automatic, setAutomatic, control, generatedAt }) {
   const [tab, setTab] = useState('Filter');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const panel = useRef(null);
-  const clusters = [...new Set(machines.map(item => item.cluster || 'Default'))];
   const change = (key, value) => setPreferences(previous => ({ ...previous, [key]: value }));
-  const toggle = (key, value) => change(key, preferences[key].includes(value) ? preferences[key].filter(item => item !== value) : [...preferences[key], value]);
 
   useEffect(() => {
     if (!open) return;
@@ -44,16 +43,7 @@ export function SettingsMenu({ open, onClose, machines, preferences, setPreferen
       }}>{name}</button>)}
     </div>
     <div id="settings-content" className="settingsContent" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-      {tab === 'Filter' && <>
-        {!session?.full_access ? <p className="muted">Sign in to view and filter machines.</p> : <>
-          <div className="settingsHeading"><strong>Clusters</strong><button onClick={() => setPreferences(previous => ({ ...previous, hiddenClusters: [], hiddenMachines: [] }))}>Show all</button></div>
-          {clusters.map(cluster => <React.Fragment key={cluster}>
-            <label className="checkRow"><strong>{cluster}</strong><input type="checkbox" checked={!preferences.hiddenClusters.includes(cluster)} onChange={() => toggle('hiddenClusters', cluster)} /></label>
-            {machines.filter(item => (item.cluster || 'Default') === cluster).map(item => <label className="checkRow machineFilter" key={item.id}><span>{item.name}</span><input type="checkbox" disabled={preferences.hiddenClusters.includes(cluster)} checked={!preferences.hiddenMachines.includes(item.resource_id)} onChange={() => toggle('hiddenMachines', item.resource_id)} /></label>)}
-          </React.Fragment>)}
-          {!machines.length && <p className="muted">No machines available.</p>}
-        </>}
-      </>}
+      {tab === 'Filter' && <ResourceFilter key={filterScope} items={filterItems} filters={filters} setFilters={setFilters} scope={filterScope} />}
       {tab === 'Display' && <>
         <label className="settingRow">Sort by<select value={preferences.sort} onChange={event => change('sort', event.target.value)}><option value="config">Configured order</option><option value="name">Name</option><option value="status">Status</option><option value="cpu_usage">CPU</option><option value="memory_usage">Memory</option><option value="disk_usage">Disk</option></select></label>
         <label className="settingRow">Layout<select value={preferences.layout} onChange={event => change('layout', event.target.value)}><option value="list">List</option><option value="grid">Grid</option></select></label>

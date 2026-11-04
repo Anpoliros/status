@@ -121,6 +121,12 @@ button:disabled { opacity: .45; cursor: default; }
 .refreshing { animation: rotate 1.2s linear infinite; }
 @keyframes pulse { to { opacity: .2; } }
 @keyframes rotate { to { transform: rotate(360deg); } }
-.machineList.grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(270px, calc((100% - (var(--max-columns, 3) - 1) * 8px) / var(--max-columns, 3)))), 1fr)); }
+.machineList.grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(270px, calc((100% - (var(--max-columns, 3) - 1) * 8px) / var(--max-columns, 3)))), 1fr)); }
 @media (max-width: 800px) { .page { width: calc(100% - 24px); } .settingsMenu { top: 124px; } }
 @media (prefers-reduced-motion: reduce) { .loadingPulse, .refreshing { animation: none; } }
+
+/* ============================== Resource filters ============================== */
+.filterClusterTitle { display: flex; align-items: center; gap: 7px; flex: 1; padding: 9px 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: grab; touch-action: none; user-select: none; }
+.filterClusterTitle strong { flex: 1; }
+.filterCluster.dragging { background: var(--surface); outline: 1px solid var(--border); border-radius: 7px; }
+.filterCluster.dragging .filterClusterTitle { cursor: grabbing; }
