@@ -1,5 +1,5 @@
 /** @file api.js @description Same-origin JSON requests and local display preferences. */
-const API_BASE = import.meta.env.VITE_STATUS_API || '';
+const API_BASE = import.meta.env?.VITE_STATUS_API || '';
 
 export async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {

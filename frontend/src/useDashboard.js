@@ -17,7 +17,7 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
   const pendingUntil = useRef(0);
   const pendingVersion = useRef(0);
   const pendingScope = useRef('servers');
-  const reading = useRef('');
+  const reading = useRef(null);
   const retryUntil = useRef(0);
   const loadSession = useCallback(async () => {
     try {
@@ -48,12 +48,13 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
 
   const load = useCallback(async () => {
     if (Date.now() < retryUntil.current) return;
-    if (reading.current === path) return;
-    reading.current = path;
+    if (reading.current?.path === path) return;
+    const read = { path, controller: new window.AbortController() };
+    reading.current = read;
     const id = ++requestId.current;
     const currentPath = path;
     try {
-      const payload = await request(currentPath);
+      const payload = await request(currentPath, { signal: read.controller.signal });
       if (id !== requestId.current || currentPath !== latestPath.current) return;
       if (currentPath.startsWith('/history/')) setHistory(payload);
       else setStatus(payload);
@@ -68,7 +69,7 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
       setError(failure.message);
       if (failure.status === 401) { setStatus(null); setHistory(null); loadSession(); }
     } finally {
-      if (reading.current === currentPath) reading.current = '';
+      if (reading.current === read) reading.current = null;
       if (id === requestId.current && currentPath === latestPath.current) setLoading(false);
     }
   }, [path, loadSession]);
@@ -92,7 +93,14 @@ export function useDashboard({ resourceView, mode, range, seconds, automatic }) 
     }, 1000);
     const visible = () => { if (!document.hidden) load(); };
     document.addEventListener('visibilitychange', visible);
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', visible); requestId.current += 1; };
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', visible);
+      requestId.current += 1;
+      // A new polling effect must not inherit the lock of its discarded request.
+      reading.current?.controller.abort();
+      reading.current = null;
+    };
   }, [session, load, effectiveMode, effectiveResource, seconds, automatic]);
 
   // Heartbeat lifetime is independent of the requested collection interval.
