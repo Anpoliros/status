@@ -88,7 +88,9 @@ class StatusHandler(BaseHTTPRequestHandler):
             try:
                 cookie = self.auth.finish(self.headers,query)
                 self.redirect('/',cookie)
-            except Exception:
+            except Exception as error:
+                # Log types only: callback URLs and provider errors can contain secrets.
+                print(f'OIDC callback failed: {type(error).__name__}', flush=True)
                 self.redirect('/?login_error=failed')
             return
         user, identity = self.identity()
