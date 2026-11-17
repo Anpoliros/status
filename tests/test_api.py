@@ -19,7 +19,7 @@ class ApiTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         base = Path(self.temp.name)
-        self.config = replace(load_config('configs/general.example.json'),database=base/'test.db',status_json=base/'snapshots/current.json',auth={
+        self.config = replace(load_config('configs/general.example.json'),instance_name='test-instance',database=base/'test.db',status_json=base/'snapshots/current.json',auth={
             'shizunet':{'enabled':True}, 'pseudo_user':{'enabled':True,'username':'recovery','password_hash':password_hash('secret')}})
         init_control(self.config)
         atomic_json(self.config.status_json,{'generated_at':'now','servers':[{'name':'private-node'}],'services':[]})
@@ -47,6 +47,12 @@ class ApiTests(unittest.TestCase):
 
     def post(self,path,payload):
         return self.client.post(self.url+path,json=payload,headers={'Origin':self.url},timeout=3)
+
+    def test_public_history_identifies_serving_instance_without_changing_snapshot(self):
+        payload = self.client.get(self.url+'/history/services?range=60d').json()
+        self.assertEqual(payload['instance'], {'name': 'test-instance'})
+        snapshot = json.loads((self.config.status_json.parent/'services-60d.json').read_text())
+        self.assertNotIn('instance', snapshot)
 
     def test_anonymous_cannot_read_private_or_fallback_snapshots(self):
         for path in ['/status','/check','/history/servers']:

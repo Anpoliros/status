@@ -179,6 +179,8 @@ class StatusHandler(BaseHTTPRequestHandler):
         print(f'{self.client_address[0]} {self.command} {urlparse(self.path).path}')
 
     def _json(self,payload,status=200,headers=None):
+        # Attribute each response to its serving instance without changing cached snapshots.
+        payload = {**payload, 'instance': {'name': self.config.instance_name}}
         body = json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode()
         self.send_response(status)
         self.send_header('Content-Type','application/json; charset=utf-8')

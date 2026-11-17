@@ -110,6 +110,7 @@ function App() {
       {dashboard.mode === 'status' && dashboard.resourceView === 'services' && <ServicesView filters={filters} services={status.services} />}
       {dashboard.mode === 'history' && <HistoryView filters={filters} history={history} range={range} setRange={setRange} resourceView={dashboard.resourceView} preferences={preferences} />}
     </>}
+    {currentData?.instance?.name && <footer className="instanceFooter">Instance: {currentData.instance.name}</footer>}
   </main>;
 }
 

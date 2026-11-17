@@ -73,6 +73,10 @@ resource 示例：
 
 每份 general 加载其同目录的 `.env`，进程环境变量优先。general 和 resource 字符串均支持 `${VARIABLE}`，缺失变量会阻止启动；不会执行 shell 表达式，也不会把一个实例的环境注入另一个实例。`STATUS_DATABASE`、`STATUS_JSON` 可覆盖对应路径。配置在进程启动时读取，修改后重启对应 worker 和 API。
 
+## 实例标识
+
+在 general 中设置 `"instance": {"name": "hp"}` 或 `x250`。名称是公开信息，最多 80 个字符；省略或留空时隐藏 footer。后端在每份 JSON 响应中附带 `instance.name`，页面 footer 使用当前展示数据的来源，切换副本后随新数据更新。名称在 API 响应时附加，不写入采集快照，无需重新构建前端即可修改实例名称（重启 API 生效）。
+
 ## 账号与公开访问
 
 Shizunet 或本地备用账号任一启用时，匿名用户仅可读取 Services History；两种登录均关闭时完整页面可用。关闭 Shizunet、仅启用 pseudo user 即为本地账号登录模式。机器、服务当前状态、机器历史及 `/check` 均要求 status 登录。已有 status 会话不依赖身份提供方在线；Shizunet 故障不会自动关闭鉴权。

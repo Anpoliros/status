@@ -1,4 +1,7 @@
 {
+  "instance": {
+    "name": "hp"
+  },
   "database": "data/status.db",
   "status_json": "data/snapshots/current.json",
   "service_interval_seconds": 600,

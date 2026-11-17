@@ -152,3 +152,6 @@ button:disabled { opacity: .45; cursor: default; }
 .trafficLine.tx { stroke: #8981ee; }
 .trafficAxis { stroke: currentColor; opacity: .15; }
 .telemetryTotals { display: flex; flex-wrap: wrap; gap: 16px; }
+
+/* ========== Serving instance ========== */
+.instanceFooter { margin-top: 28px; padding: 12px 0; color: var(--muted); font-size: 12px; text-align: center; overflow-wrap: anywhere; }

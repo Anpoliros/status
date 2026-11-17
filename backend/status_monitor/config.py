@@ -50,6 +50,7 @@ class AppConfig:
     sources: list[PrometheusConfig] = field(default_factory=list)
     auth: dict = field(default_factory=dict)
     refresh: dict = field(default_factory=dict)
+    instance_name: str = ''
 
     @property
     def all_servers(self):
@@ -163,6 +164,13 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
     refresh['presets'] = [integer(value, 'refresh.presets') for value in refresh['presets']]
     if len(refresh['presets']) != 3 or any(not 0 < value <= 86400 for value in refresh['presets']):
         raise ValueError('Exactly three refresh presets between 1 and 86400 are required')
+    instance = raw.get('instance', {})
+    if not isinstance(instance, dict) or set(instance) - {'name'}:
+        raise ValueError('instance supports a public name only')
+    instance_name = instance.get('name', '')
+    if not isinstance(instance_name, str) or len(instance_name) > 80:
+        raise ValueError('instance.name must be a string of at most 80 characters')
+    instance_name = instance_name.strip()
     auth = raw.get('auth', {})
     for section in ('shizunet', 'pseudo_user'):
         options = auth.setdefault(section, {})
@@ -190,4 +198,4 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
         database=repository_path(environment.get('STATUS_DATABASE') or raw.get('database', 'data/status.db')),
         status_json=snapshot_path,
         request_timeout_seconds=float(raw.get('request_timeout_seconds', 8)),
-        services=services, servers=servers, sources=sources, auth=auth, refresh=refresh, **values)
+        services=services, servers=servers, sources=sources, auth=auth, refresh=refresh, instance_name=instance_name, **values)
