@@ -130,6 +130,8 @@ Filter 控制集群及机器可见性，Display 控制排序、列表/网格、�
 
 ## 运行与部署
 
+Cloudflare 入口、hp 的三个 connector 与 x250 副本关系见 [部署拓扑](docs/cloudflare-topology.md)。
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
