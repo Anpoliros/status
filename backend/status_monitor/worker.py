@@ -5,6 +5,9 @@ import argparse
 import asyncio
 import fcntl
 import signal
+import time
+
+from .service_metrics import collect_metrics
 
 from .collector import run_server_collection, run_service_checks
 from .config import AppConfig, load_config
@@ -30,6 +33,7 @@ async def run_worker(config: AppConfig, once: bool = False) -> None:
         sync_config(conn,config)
         # Publish persisted data immediately; collection can proceed afterwards.
         write_status_json(conn,config)
+        next_metrics = 0.0
         while not stop.is_set():
             changed = False
             for scope,collect in [('servers',run_server_collection),('services',run_service_checks)]:
@@ -43,6 +47,13 @@ async def run_worker(config: AppConfig, once: bool = False) -> None:
                     finally:
                         finish_collection(config,scope)
                     changed = True
+            if any(service.metrics for service in config.services) and time.monotonic() >= next_metrics:
+                try:
+                    await asyncio.to_thread(collect_metrics, config)
+                except Exception as error:
+                    print(f'Service metrics failed: {type(error).__name__}', flush=True)
+                next_metrics = time.monotonic() + 10
+                changed = True
             if changed:
                 write_status_json(conn,config)
             if once:

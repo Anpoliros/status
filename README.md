@@ -266,3 +266,33 @@ collector 的 `name` 和 `cluster` 在本地维护，不发送到 Prometheus；�
 集群顺序默认遵循资源配置；Filter 与页面使用同一顺序。点击集群标题折叠，长按标题或直接拖动右侧手柄可排序；拖动时显示插入位置，松手后保存，并支持滚动菜单。键盘聚焦标题后可用 Alt + 上/下箭头调整顺序。
 
 Status 与 History 共享同一资源类型的集群顺序，各自保留筛选和折叠状态；机器与服务设置分开保存。Name、CPU 等显示排序只影响集群内部的机器，不会改变集群排列。上述设置保存在当前浏览器。
+
+## 本地服务流量与 TCP
+
+服务条目可选配置 `"metrics": {"port": 1638}`，端口为本机应用监听端口。
+每 10 秒独立采集 TCP ESTABLISHED 数量和流量；不依赖 HTTP 健康探测周期。
+当前只支持 cloudflared 与应用通过本机 loopback TCP 通信的部署。
+统计包括本地调用、HTTP 探测、IP/TCP 开销与重传，不包括 Cloudflare 缓存命中；
+连接数包括空闲连接池和长连接，不代表访客人数。连接统计按本地端口，包括该端口的非 loopback 连接。
+
+### 一次安装流量计数器
+
+审核 `configs/scripts/ports.json` 中的端口列表后，在仓库根目录执行：
+
+```bash
+sudo sh configs/scripts/install-port-counters.sh
+```
+
+安装脚本把 helper 和端口清单复制到 root 管理的 `/usr/local/lib/status-ports`，
+建立 `status-ports.service`。它仅管理独立 nftables 表 `inet status_ports`，
+在 output hook 对 loopback 上的服务源/目的端口分别计数，不添加丢弃或放行规则。
+不应使用全局 `nft flush ruleset`；外部防火墙重载若删除此表，重启该服务重建即可。
+每 5 秒原子发布 `/run/status-ports/counters.json`；status 无需 sudo 或 root。
+更新端口清单后重新执行安装命令。移除时停止并禁用 systemd 服务，
+再删除专用 nftables 表与已安装文件。
+
+未安装或计数文件超时，TCP 仍可用，流量显示缺失；第一轮样本只建立基线。
+计数器重置或采集中断超过 30 秒重新建立基线，不跨缺失区间推算流量。
+累计量仅代表已观察区间。原始数据保留 24 小时，小时/日聚合保留 61 天。
+页面提供近一小时分钟均值、24 小时小时均值、60 天日均值，今日累计与 TCP 峰值；
+日期以 UTC 划分。指标仅经受保护的 `/status` 发布，匿名服务健康历史不含流量数据。

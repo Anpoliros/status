@@ -66,6 +66,9 @@ def build_status(conn: sqlite3.Connection, config: AppConfig, include_history: b
         definition = server_config.get(server['ip'])
         server['resource_id'] = server['resource_id'] or _identity('server', server['ip'])
 
+    from .service_metrics import attach_metrics
+    attach_metrics(conn, config, services)
+
     monitored = services + servers
     if services and any(service["status"] == "down" for service in services):
         overall = "critical"

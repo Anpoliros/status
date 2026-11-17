@@ -1,5 +1,6 @@
 /** @file Views.jsx @description Machine, service and pre-aggregated history presentation. */
 import React from 'react';
+import { ServiceTelemetry } from './ServiceTelemetry.jsx';
 import { CheckCircle2, LayoutGrid, List, WifiOff } from 'lucide-react';
 import { orderedClusters, resourceKey } from './ResourceFilter.jsx';
 import { MachineCard } from './MachineCard.jsx';
@@ -25,7 +26,7 @@ export function ServicesView({ services, filters }) {
   visible.sort((a, b) => clusters.indexOf(a.cluster || 'Default') - clusters.indexOf(b.cluster || 'Default'));
   return <section className="contentCard"><div className="serviceList">{visible.map(service => {
     const level = service.status === 'up' ? 'healthy' : service.status === 'down' ? 'critical' : 'missing';
-    return <article className="serviceCard" key={service.id}><div className="serviceIdentity"><span className={`statusDot ${level}`} /><div><h3>{service.name}</h3><p>{service.url}</p></div></div><div className="serviceMetric">{level === 'healthy' ? <CheckCircle2 size={15} /> : <WifiOff size={15} />}<span>{service.latency_ms == null ? service.status === 'down' ? 'Down' : 'No measurement' : `${service.latency_ms} ms`}</span></div></article>;
+    return <article className={`serviceCard ${service.metrics ? 'withTelemetry' : ''}`} key={service.id}><div className="serviceIdentity"><span className={`statusDot ${level}`} /><div><h3>{service.name}</h3><p>{service.url}</p></div></div><div className="serviceMetric">{level === 'healthy' ? <CheckCircle2 size={15} /> : <WifiOff size={15} />}<span>{service.latency_ms == null ? service.status === 'down' ? 'Down' : 'No measurement' : `${service.latency_ms} ms`}</span></div>{service.metrics && <ServiceTelemetry metrics={service.metrics} />}</article>;
   })}{!visible.length && <EmptyState label="No services match the current filters" />}</div></section>;
 }
 

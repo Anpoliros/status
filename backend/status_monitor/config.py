@@ -22,6 +22,7 @@ class ServiceConfig:
     cluster: str = 'Default'
     id: str = ''
     order: int = 0
+    metrics: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -115,6 +116,14 @@ def load_config(path: str | Path = 'configs/general.json') -> AppConfig:
                 ids.add(identity)
                 endpoints.add((kind, endpoint))
                 options = {}
+                if kind == 'service' and item.get('metrics'):
+                    metrics = item['metrics']
+                    if not isinstance(metrics, dict) or set(metrics) - {'port'}:
+                        raise ValueError('Service metrics supports a local port only')
+                    port = metrics.get('port')
+                    if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+                        raise ValueError('Invalid service metrics port')
+                    options['metrics'] = {'port': port}
                 if 'transport' in item:
                     if kind != 'server' or not item.get('id'):
                         raise ValueError('SSH transport requires a server with an explicit stable id')
