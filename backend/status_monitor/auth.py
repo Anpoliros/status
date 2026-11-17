@@ -45,6 +45,26 @@ def verify_password(password, encoded):
         return False
 
 
+class RequestsJWKClient(jwt.PyJWKClient):
+    """Use the same HTTP transport as discovery and token exchange.
+
+    urllib's default requests may be rejected at the identity provider's edge.
+    Preserve PyJWT's key selection, rotation and time-limited JWKS cache.
+    """
+    def fetch_data(self):
+        data = None
+        try:
+            response = requests.get(self.uri, headers={'Accept': 'application/json'}, timeout=self.timeout)
+            response.raise_for_status()
+            data = response.json()
+            return data
+        except (requests.RequestException, ValueError) as error:
+            raise jwt.PyJWKClientConnectionError('Unable to fetch OIDC signing keys') from error
+        finally:
+            if self.jwk_set_cache is not None:
+                self.jwk_set_cache.put(data)
+
+
 class Auth:
     def __init__(self, config: AppConfig):
         self.config = config
@@ -127,7 +147,7 @@ class Auth:
                 if not metadata.get(key, '').startswith('https://') and not issuer.startswith(('http://localhost:', 'http://127.0.0.1:')):
                     raise ValueError('OIDC requires HTTPS endpoints')
             self.discovery = metadata
-            self.jwks = jwt.PyJWKClient(metadata['jwks_uri'], timeout=8)
+            self.jwks = RequestsJWKClient(metadata['jwks_uri'], timeout=8)
             self.discovery_until = time.monotonic()+300
             return metadata
 
